@@ -1,0 +1,79 @@
+services:
+  reserva_api:
+    build:
+      context: .
+      dockerfile: Servicios/Reservas/Reserva.Api/Dockerfile
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    init: true
+    depends_on:
+      - reserva_db
+  reserva_db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: reservadb
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+  
+  kong-database:
+    image: postgres:13
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: kong
+      POSTGRES_USER: kong
+      POSTGRES_PASSWORD: kong
+    volumes:
+      - kong_data:/var/lib/postgresql/data
+
+  kong:
+    image: kong:latest
+    depends_on:
+      - kong-database
+    environment:
+      KONG_DATABASE: postgres
+      KONG_PG_HOST: kong-database
+      KONG_PG_USER: kong
+      KONG_PG_PASSWORD: kong
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+    ports:
+      - "8000:8000" # Public access
+      - "8001:8001" # Admin API
+      - "8443:8443" # HTTPS public access
+      
+  konga:
+    image: pantsel/konga
+    ports:
+      - "1337:1337"
+    environment:
+      DB_ADAPTER: postgres
+      DB_HOST: konga_db
+      DB_PORT: 5432
+      DB_USER: kongauser
+      DB_PASSWORD: CHANGE_ME
+      DB_DATABASE: kongadb
+    depends_on:
+      - konga_db
+
+  # Base de datos para Konga
+  konga_db:
+    image: postgres:10
+    environment:
+      POSTGRES_USER: kongauser
+      POSTGRES_PASSWORD: CHANGE_ME
+      POSTGRES_DB: kongadb
+    volumes:
+      - konga_data:/var/lib/postgresql/data  
+volumes:
+  db_data:
+  kong_data:
+  konga_data:
