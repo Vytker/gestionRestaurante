@@ -9,17 +9,17 @@ services:
     init: true
     depends_on:
       - reserva_db
+    networks:
+      - reservanet
   reserva_db:
-    image: postgres:latest
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: reservadb
+    image: mcr.microsoft.com/mssql/server:2022-latest
     ports:
-      - "5432:5432"
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    restart: unless-stopped
+      - "1433:1433"
+    environment:
+      SA_PASSWORD: "-Vyte123456!"
+      ACCEPT_EULA: "Y"
+    networks:
+      - reservanet
   
   kong-database:
     image: postgres:13
@@ -30,11 +30,15 @@ services:
       POSTGRES_PASSWORD: kong
     volumes:
       - kong_data:/var/lib/postgresql/data
+    networks:
+      - reservanet
 
   kong:
     image: kong:latest
     depends_on:
       - kong-database
+    networks:
+      - reservanet
     environment:
       KONG_DATABASE: postgres
       KONG_PG_HOST: kong-database
@@ -77,3 +81,7 @@ volumes:
   db_data:
   kong_data:
   konga_data:
+
+networks:
+  reservanet:
+    driver: bridge
