@@ -18,9 +18,40 @@ services:
     environment:
       SA_PASSWORD: "-Vyte123456!"
       ACCEPT_EULA: "Y"
+    volumes:
+      - reserva_db_data:/var/opt/mssql  # Volumen persistente para la base de datos
     networks:
       - reservanet
   
+  identity-db:
+    image: postgres:15
+    container_name: identity-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: identitydb
+    volumes:
+      - identity_db_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+  identity-api:
+    build:
+      context: .
+      dockerfile: Servicios/Identity/Identity.Api/Dockerfile
+    container_name: identity-api
+    command: ["dotnet", "Identity.Api.dll", "migrate"]
+    depends_on:
+      - identity-db
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=identity-db;Port=5432;Database=identitydb;Username=postgres;Password=postgres
+      - Jwt__Key=SuperSecretJwtKeyAqui123456
+    ports:
+      - "5001:5000"
+    
+
   kong-database:
     image: postgres:13
     restart: unless-stopped
@@ -78,10 +109,10 @@ services:
     volumes:
       - konga_data:/var/lib/postgresql/data  
 volumes:
-  db_data:
+  reserva_db_data:
   kong_data:
   konga_data:
-
+  identity_db_data:
 networks:
   reservanet:
     driver: bridge
