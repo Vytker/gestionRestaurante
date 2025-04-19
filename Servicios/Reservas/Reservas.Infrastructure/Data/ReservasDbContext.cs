@@ -8,6 +8,7 @@ namespace Reservas.Infrastructure.Data
         {
 
         }
-        public DbSet<Reservas.Domain.Entities.Reserva> Reservas { get; set; }
+        public DbSet<Domain.Entities.Reserva> Reservas { get; set; }
+        public DbSet<Domain.Entities.Turno> Turnos { get; set; }
     }
 }

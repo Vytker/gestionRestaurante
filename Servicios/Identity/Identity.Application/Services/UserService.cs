@@ -24,7 +24,7 @@ namespace Identity.Application.Services
             _context = context;
             _config = config;
         }
-
+        
         public async Task<bool> RegisterAsync(RegisterDto dto)
         {
             // Verificar si el usuario ya existe

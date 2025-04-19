@@ -2,16 +2,22 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Reservas.Application.Interfaces;
+
 using Reservas.Application.Services;
 using Reservas.Infrastructure.Data;
+using Reservas.Infrastructure.Repositories;
 using System.Text;
+
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ReservasDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 // Add services to the container.
 builder.Services.AddScoped<IReservaService, ReservaService>();
+builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
+
+
+
 
 // Configurar la autenticación con JWT
 builder.Services.AddAuthentication(options =>
@@ -21,16 +27,15 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    
     // Configura los parámetros de validación (usa valores de configuración o hardcodea para pruebas)
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
+        ValidateIssuer = false,
+        ValidateAudience = false,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "YourIssuer",
-        ValidAudience = builder.Configuration["Jwt:Audience"] ?? "YourAudience",
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? "UnaClaveSecretaMuyLarga"))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
     };
 });
 

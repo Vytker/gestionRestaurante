@@ -35,6 +35,8 @@ services:
       - identity_db_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
+    networks:
+      - reservanet
 
   identity-api:
     build:
@@ -47,9 +49,11 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=identity-db;Port=5432;Database=identitydb;Username=postgres;Password=postgres
-      - Jwt__Key=SuperSecretJwtKeyAqui123456
+      - Jwt__Key=CHANGE_ME
     ports:
       - "5001:5000"
+    networks:
+      - reservanet
     
 
   kong-database:
@@ -89,6 +93,8 @@ services:
     image: pantsel/konga
     ports:
       - "1337:1337"
+    networks:
+      - reservanet
     environment:
       DB_ADAPTER: postgres
       DB_HOST: konga_db
@@ -108,6 +114,8 @@ services:
       POSTGRES_DB: kongadb
     volumes:
       - konga_data:/var/lib/postgresql/data  
+    networks:
+      - reservanet
 volumes:
   reserva_db_data:
   kong_data:
@@ -116,3 +124,5 @@ volumes:
 networks:
   reservanet:
     driver: bridge
+    attachable: true
+    name: reservanet
