@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Identity.Application.Dtos;
 using Identity.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Identity.Api.Controllers
 {
@@ -27,7 +28,7 @@ namespace Identity.Api.Controllers
             return Ok(new { token });   
         }
 
-
+        [Authorize]
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {

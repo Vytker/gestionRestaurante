@@ -14,6 +14,16 @@ builder.Services.AddDbContext<IdentityDbContext>(options =>
 //builder.Services.AddScoped<IReservaService, ReservaService>();
 builder.Services.AddScoped<IUserService, UserService>();
 // Configurar la autenticación con JWT
+
+//temporal quitar
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrEmpty(jwtKey))
+{
+    throw new Exception("¡La clave JWT no se está leyendo!");
+}
+
+Console.WriteLine($"Clave JWT: {jwtKey} ({jwtKey.Length} caracteres)");
+
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
     {

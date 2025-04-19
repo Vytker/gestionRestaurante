@@ -19,6 +19,21 @@ namespace Reservas.Domain.Entities
         [StringLength(50)]
         public string? Notas { get; set; }
 
+        public EstadoReserva Estado { get; set; } = EstadoReserva.Pendiente; // Estado por defecto
+
+        //clave foranea para turno
+        public int TurnoId { get; set; }
+        [ForeignKey("TurnoId")]
+        public Turno Turno { get; set; } = null!;
+
+
+        public enum EstadoReserva
+        {
+            Pendiente,
+            Confirmada,
+            Cancelada,
+            Rechazada
+        }
 
     }
 }

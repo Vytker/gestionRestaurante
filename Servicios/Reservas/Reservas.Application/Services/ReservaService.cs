@@ -1,32 +1,62 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Reservas.Application.Interfaces;
-using Reservas.Infrastructure.Data;
+using Reservas.Application.Dtos;
+using Reservas.Domain.Entities;
 
 namespace Reservas.Application.Services
 {
-    
-        public class ReservaService : IReservaService
-        {
-            private readonly ReservasDbContext _dbContext;
+    public class ReservaService : IReservaService
+    {
+        private readonly IReservaRepository _reservaRepository;
 
-            public ReservaService(ReservasDbContext dbContext)
+        public ReservaService(IReservaRepository reservaRepository)
+        {
+            _reservaRepository = reservaRepository;
+        }
+
+
+        public IEnumerable<Reserva> ObtenerTodasReservas()
+        {
+            return _reservaRepository.ObtenerTodas();
+        }
+
+        public async Task<(bool Disponible, string? Error)> CrearReservaAsync(ReservaCreateDto reservaDto)
+        {
+            var turno = await _reservaRepository.ObtenerTurnoConReservasPorIdAsync(reservaDto.TurnoId);
+            //El método ObtenerTurnoConReservasPorIdAsync tiene como objetivo obtener un Turno con todas las Reservas asociadas a ese turno
+
+            if (turno == null)
             {
-                _dbContext = dbContext;
+                return (false, "Turno no encontrado.");
             }
-            public IEnumerable<Domain.Entities.Reserva> ObtenerTodasReservas()
+            var comensalesYaReservados = turno.Reservas
+                .Where(r => r.FechaReserva.Date == reservaDto.FechaReserva.Date)
+                .Sum(r => r.NumeroComensales);
+
+            if (comensalesYaReservados + reservaDto.NumeroComensales > turno.Capacidad)
             {
-                return _dbContext.Reservas.ToList();
+                return (false, "No hay suficiente capacidad en el turno seleccionado.");
             }
-            public void CrearReserva(Domain.Entities.Reserva reserva)
+            var reserva = new Reserva
             {
-                // Solución: Generar un nuevo Id basado en el conteo de registros en la base de datos
-                if (reserva.FechaReserva.Kind == DateTimeKind.Unspecified)
-                {
-                    reserva.FechaReserva = DateTime.SpecifyKind(reserva.FechaReserva, DateTimeKind.Utc);
-                }
-                _dbContext.Reservas.Add(reserva);
-                _dbContext.SaveChanges();
-            }
+                NombreCliente = reservaDto.NombreCliente,
+                FechaReserva = reservaDto.FechaReserva,
+                NumeroComensales = reservaDto.NumeroComensales,
+                Notas = reservaDto.Notas,
+                TurnoId = reservaDto.TurnoId
+            };
+            _reservaRepository.Crear(reserva);
+            await _reservaRepository.GuardarCambiosAsync();
+            return (true, null);
+        }
+
+        public void ActualizarEstadoReserva(Guid id, Reserva.EstadoReserva nuevoEstado)
+        {
+            var reserva = _reservaRepository.ObtenerPorId(id);
+            if (reserva == null)
+                throw new Exception("Reserva no encontrada.");
+
+            reserva.Estado = nuevoEstado;
+            _reservaRepository.Actualizar(reserva);
         }
     }
-
+}
