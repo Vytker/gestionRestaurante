@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Reservas.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using Reservas.Infrastructure.Data;
 namespace Reservas.Infrastructure.Migrations
 {
     [DbContext(typeof(ReservasDbContext))]
-    partial class ReservasDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250422104647_nuevaMigracion1")]
+    partial class nuevaMigracion1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -27,11 +30,6 @@ namespace Reservas.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Codigo")
-                        .IsRequired()
-                        .HasMaxLength(8)
-                        .HasColumnType("nvarchar(8)");
 
                     b.Property<int>("Estado")
                         .HasColumnType("int");
@@ -58,7 +56,7 @@ namespace Reservas.Infrastructure.Migrations
 
                     b.HasIndex("TurnoId");
 
-                    b.ToTable("Reservas", (string)null);
+                    b.ToTable("Reservas");
                 });
 
             modelBuilder.Entity("Reservas.Domain.Entities.Turno", b =>
@@ -87,7 +85,7 @@ namespace Reservas.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Turnos", (string)null);
+                    b.ToTable("Turnos");
                 });
 
             modelBuilder.Entity("Reservas.Domain.Entities.Reserva", b =>

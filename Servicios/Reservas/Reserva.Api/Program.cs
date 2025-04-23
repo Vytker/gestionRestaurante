@@ -5,8 +5,10 @@ using Microsoft.IdentityModel.Tokens;
 
 using Reservas.Application.Services;
 using Reservas.Infrastructure.Data;
+using Reservas.Infrastructure.Data.Repositories;
 using Reservas.Infrastructure.Repositories;
 using System.Text;
+using Reservas.Application.Interfaces;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,8 +18,10 @@ builder.Services.AddDbContext<ReservasDbContext>(options =>
 builder.Services.AddScoped<IReservaService, ReservaService>();
 builder.Services.AddScoped<IReservaRepository, ReservaRepository>();
 
+builder.Services.AddScoped<ITurnoRepository, TurnoRepository>();
+builder.Services.AddScoped<ITurnoService, TurnoService>();
 
-
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 // Configurar la autenticación con JWT
 builder.Services.AddAuthentication(options =>
@@ -46,7 +50,16 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy
+          .WithOrigins("http://localhost:3000")   // URL de tu front
+          .AllowAnyHeader()
+          .AllowAnyMethod();
+    });
+});
 
 
 
@@ -77,6 +90,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseHsts();
+
+
+
+app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

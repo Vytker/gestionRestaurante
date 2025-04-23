@@ -20,7 +20,8 @@ namespace Reservas.Domain.Entities
         public string? Notas { get; set; }
 
         public EstadoReserva Estado { get; set; } = EstadoReserva.Pendiente; // Estado por defecto
-
+        [Required, StringLength(8)]
+        public string Codigo { get; set; } = string.Empty; // Código único para la reserva
         //clave foranea para turno
         public int TurnoId { get; set; }
         [ForeignKey("TurnoId")]

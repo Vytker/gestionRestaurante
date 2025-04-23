@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Reservas.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using Reservas.Infrastructure.Data;
 namespace Reservas.Infrastructure.Migrations
 {
     [DbContext(typeof(ReservasDbContext))]
-    partial class ReservasDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250422105406_nuevaMigracion2")]
+    partial class nuevaMigracion2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -27,11 +30,6 @@ namespace Reservas.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Codigo")
-                        .IsRequired()
-                        .HasMaxLength(8)
-                        .HasColumnType("nvarchar(8)");
 
                     b.Property<int>("Estado")
                         .HasColumnType("int");
