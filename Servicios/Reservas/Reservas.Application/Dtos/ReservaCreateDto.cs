@@ -9,7 +9,11 @@ namespace Reservas.Application.Dtos
         [Required(ErrorMessage ="El nombre del cliente es obligatorio.")]
         [StringLength(100, ErrorMessage = "El nombre del cliente no puede exceder los 100 caracteres.")]
         public string NombreCliente { get; set; } = string.Empty;
+        [Required(ErrorMessage = "El email del cliente es obligatorio.")]
+        [StringLength(100, ErrorMessage = "El email del cliente no puede exceder los 100 caracteres.")]
+        public string Email { get; set; } = string.Empty;
         [Required(ErrorMessage = "La fecha de reserva es obligatoria.")]
+
         public DateTime FechaReserva { get; set; }
         [Required(ErrorMessage = "El número de comensales es obligatorio.")]
         [Range(1, 100, ErrorMessage = "El número de comensales debe estar entre 1 y 100.")]
