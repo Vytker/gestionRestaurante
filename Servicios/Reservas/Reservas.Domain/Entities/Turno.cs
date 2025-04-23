@@ -14,6 +14,8 @@ namespace Reservas.Domain.Entities
 
         public required int Capacidad { get; set; } // Capacidad máxima de reservas para este turno
 
+        public bool Eliminado { get; set; } = false; // Indica si el turno ha sido eliminado lógicamente
+
         public ICollection<Reserva> Reservas { get; set; } = new List<Reserva>(); // Relación con reservas
         
     }
