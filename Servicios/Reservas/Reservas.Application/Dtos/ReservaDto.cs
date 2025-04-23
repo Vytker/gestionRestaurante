@@ -4,6 +4,8 @@
     {
         public Guid Id { get; set; }
         public string NombreCliente { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+
         public DateTime FechaReserva { get; set; }
         public int NumeroComensales { get; set; }
         public string? Notas { get; set; }

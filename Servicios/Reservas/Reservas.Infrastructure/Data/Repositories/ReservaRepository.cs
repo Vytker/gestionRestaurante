@@ -54,6 +54,7 @@ namespace Reservas.Infrastructure.Repositories
             var reserva = new Reserva
             {
                 NombreCliente = dto.NombreCliente,
+                Email= dto.Email,
                 FechaReserva = dto.FechaReserva,
                 NumeroComensales = dto.NumeroComensales,
                 Notas = dto.Notas,

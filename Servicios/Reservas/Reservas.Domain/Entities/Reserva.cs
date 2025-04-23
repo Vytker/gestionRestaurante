@@ -12,7 +12,9 @@ namespace Reservas.Domain.Entities
         [Required]
         [StringLength(50)]
         public required string NombreCliente { get; set; }
-        
+        public string Email { get; set; } = string.Empty;
+
+
         public required DateTime FechaReserva { get; set; }
         public required int NumeroComensales { get; set; }
 

@@ -49,6 +49,7 @@ namespace Reservas.Application.Services
             var reserva = new Reserva
             {
                 NombreCliente = reservaDto.NombreCliente,
+                Email = reservaDto.Email,
                 FechaReserva = reservaDto.FechaReserva,
                 NumeroComensales = reservaDto.NumeroComensales,
                 Notas = reservaDto.Notas,
@@ -80,6 +81,7 @@ namespace Reservas.Application.Services
             {
                 Id = r.Id,
                 NombreCliente = r.NombreCliente,
+                Email= r.Email,
                 FechaReserva = r.FechaReserva,
                 NumeroComensales = r.NumeroComensales,
                 Notas = r.Notas,
