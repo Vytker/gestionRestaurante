@@ -67,29 +67,40 @@ namespace Identity.Application.Services
             }
 
             // Generar el token JWT
-            var token = GenerateJwtToken(user);
-            return token;
+            
+            return GenerateJwtToken(user);
         }
 
         private string GenerateJwtToken(User user)
         {
-            var claims = new[]
+            var ur = _context.UserRestaurantes
+                             .FirstOrDefault(x => x.UserId == user.Id);
+
+
+            if (user.Role != "SuperAdmin")
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.UserName),
-                new Claim(ClaimTypes.Role, user.Role)
+                ur = _context.UserRestaurantes
+                    .FirstOrDefault(x => x.UserId == user.Id) ?? throw new Exception("No se ha encontrado el restaurante del usuario");
+            }
+               
+
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+                new Claim(ClaimTypes.Role, ur?.Role ?? user.Role ?? "User"),
+                new Claim("restauranteId", ur?.RestaurantId.ToString() ?? string.Empty)
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
                 claims: claims,
                 expires: DateTime.UtcNow.AddHours(2),
-                signingCredentials: creds
-            );
+                signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
     }
 }

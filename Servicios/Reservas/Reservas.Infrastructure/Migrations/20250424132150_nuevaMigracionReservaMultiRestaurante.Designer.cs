@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Reservas.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using Reservas.Infrastructure.Data;
 namespace Reservas.Infrastructure.Migrations
 {
     [DbContext(typeof(ReservasDbContext))]
-    partial class ReservasDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250424132150_nuevaMigracionReservaMultiRestaurante")]
+    partial class nuevaMigracionReservaMultiRestaurante
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -101,8 +104,7 @@ namespace Reservas.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("RestauranteId", "Nombre")
-                        .IsUnique()
-                        .HasFilter("[Eliminado] = 0");
+                        .IsUnique();
 
                     b.ToTable("Turnos", (string)null);
                 });

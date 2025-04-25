@@ -6,16 +6,15 @@ using Reservas.Domain.Entities;
 
 public interface IReservaService
 {
-    IEnumerable<Reserva> ObtenerTodasReservas();
-    void ActualizarEstadoReserva(Guid id, Reserva.EstadoReserva nuevoEstado);
+    IEnumerable<Reserva> ObtenerTodasReservas(Guid restauranteId);
+    void ActualizarEstadoReserva(Guid restauranteId,Guid id, Reserva.EstadoReserva nuevoEstado);
 
     // Corrección: Cambiar la firma del método para usar un tipo de retorno genérico adecuado.
-    Task<(bool Disponible, string? Error, string Codigo)> CrearReservaAsync(ReservaCreateDto reservaDto);
-    Task<ReservaDto?> ObtenerReservaPorCodeAsync(string code);
-    Task<bool> ActualizarReservaPorCodeAsync(string code, ReservaUpdateDto dto);
-    Task<bool> CancelarReservaPorCodeAsync(string code);
+    Task<(bool Disponible, string? Error, string Codigo)> CrearReservaAsync(Guid restauranteId,ReservaCreateDto reservaDto);
+    Task<ReservaDto?> ObtenerReservaPorCodeAsync(string code, Guid restauranteId);
+    Task<bool> ActualizarReservaPorCodeAsync(string code, ReservaUpdateDto dto, Guid restauranteId);
+    Task<bool> CancelarReservaPorCodeAsync(string code, Guid restauranteId);
     //existe por codigo
-    bool ExistePorCode(string code);
-    // Obtener reserva por código
+
 
 }

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +15,7 @@ builder.Services.AddDbContext<IdentityDbContext>(options =>
 //builder.Services.AddScoped<IReservaService, ReservaService>();
 builder.Services.AddScoped<IUserService, UserService>();
 // Configurar la autenticación con JWT
+builder.Services.AddScoped<IRestauranteService, RestauranteService>();
 
 //temporal quitar
 var jwtKey = builder.Configuration["Jwt:Key"];
@@ -34,7 +36,8 @@ builder.Services.AddAuthentication("Bearer")
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+            RoleClaimType = ClaimTypes.Role
         };
     });
 

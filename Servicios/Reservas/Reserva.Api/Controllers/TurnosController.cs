@@ -1,11 +1,15 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Reservas.Application.Interfaces;
 using Reservas.Application.Dtos;
+using Shared.Extensions;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Reserva.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "Owner")] // Fixed the CS1016 error by combining roles into a single string
+    [Authorize(Roles = "SuperAdmin")]
     public class TurnosController : ControllerBase
     {
         private readonly ITurnoService _turnoService;
@@ -18,7 +22,8 @@ namespace Reserva.Api.Controllers
         {
             try
             {
-                await _turnoService.CrearTurnoAsync(dto);
+                var restId = User.RestauranteId();
+                await _turnoService.CrearTurnoAsync(dto, restId);
                 return Ok(new { mensaje = "Turno creado correctamente" });
             }
             catch (ArgumentException ex)
@@ -36,20 +41,19 @@ namespace Reserva.Api.Controllers
             }
         }
 
-            [HttpGet]
-            public async Task<IActionResult> GetAll()
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
         {
-            var turnos = await _turnoService.ObtenerTodosTurnosAsync();
-            if (turnos == null || !turnos.Any())
-            {
-                return NoContent(); // Si no hay turnos
-            }
-            return Ok(turnos);
+            var restId = User.RestauranteId();
+            var turnos = await _turnoService.ObtenerTodosAsync(restId);
+
+            return turnos.Any() ? Ok(turnos) : NoContent(); // Si hay turnos
         }
         [HttpGet("{id}")]
         public async Task<IActionResult> Get(int id)
         {
-            var turno = await _turnoService.ObtenerTurnoPorIdAsync(id);
+            var restId = User.RestauranteId();
+            var turno = await _turnoService.ObtenerTurnoPorIdAsync(id, restId);
             if (turno == null)
             {
                 return NotFound(new { error = "Turno no encontrado" });
@@ -61,10 +65,11 @@ namespace Reserva.Api.Controllers
         public async Task<IActionResult> Update(int id, [FromBody] TurnoUpdateDto dto)
         {
             dto.Id = id;
-            
+
             try
             {
-                await _turnoService.EditarTurnoAsync(id,dto);
+                var restId = User.RestauranteId();
+                await _turnoService.EditarTurnoAsync(id, dto, restId);
                 return Ok(new { mensaje = "Turno actualizado correctamente" });
             }
             catch (ArgumentException ex)
@@ -84,7 +89,8 @@ namespace Reserva.Api.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var eliminado = await _turnoService.EliminarTurnoAsync(id);
+            var restId = User.RestauranteId();
+            var eliminado = await _turnoService.EliminarTurnoAsync(id, restId);
             if (!eliminado) return NotFound();
             return Ok();
         }

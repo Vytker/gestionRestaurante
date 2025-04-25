@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Reservas.Application.Dtos;
-using Reservas.Application.Interfaces;
-
+using Shared.Extensions;
 
 
 namespace Reserva.Api.Controllers
@@ -21,9 +20,12 @@ namespace Reserva.Api.Controllers
             
         }
         [HttpGet]
+        [Authorize(Roles ="Owner,Staff,SuperAdmin")]
         public IActionResult GetAll()
+
         {
-            var reservas = _reservaService.ObtenerTodasReservas();
+            var restId = User.RestauranteId();
+            var reservas = _reservaService.ObtenerTodasReservas(restId);
             if (!reservas.Any())
             {
                 return NoContent();  // Si no hay reservas
@@ -42,8 +44,9 @@ namespace Reserva.Api.Controllers
 
             try
             {
+                var restId = User.RestauranteId();
                 // Llamas al servicio que ya genera y comprueba el code internamente
-                var (ok,error,codigo) = await _reservaService.CrearReservaAsync(reservaDto);
+                var (ok,error,codigo) = await _reservaService.CrearReservaAsync(restId,reservaDto);
 
                 if (!ok)
                     return BadRequest(new { error });
@@ -69,7 +72,8 @@ namespace Reserva.Api.Controllers
             // Verifica si la reserva existe
             try
             {
-                _reservaService.ActualizarEstadoReserva(id, nuevoEstado);
+                var restId = User.RestauranteId();
+                _reservaService.ActualizarEstadoReserva(restId,id, nuevoEstado);
                 return NoContent(); // Devuelve 204 No Content si la actualización fue exitosa
             }
             catch (KeyNotFoundException)
@@ -87,7 +91,8 @@ namespace Reserva.Api.Controllers
         [HttpGet("codigo/{code}")]
         public async Task<IActionResult> GetByCode(string code)
         {
-            var dto = await _reservaService.ObtenerReservaPorCodeAsync(code);
+            var restId = User.RestauranteId();
+            var dto = await _reservaService.ObtenerReservaPorCodeAsync(code, restId);
             return dto == null ? NotFound() : Ok(dto);
         }
 
@@ -95,7 +100,8 @@ namespace Reserva.Api.Controllers
         [HttpPut("codigo/{code}")]
         public async Task<IActionResult> UpdateByCode(string code, [FromBody] ReservaUpdateDto dto)
         {
-            var ok = await _reservaService.ActualizarReservaPorCodeAsync(code, dto);
+            var restId = User.RestauranteId();
+            var ok = await _reservaService.ActualizarReservaPorCodeAsync(code, dto, restId);
             return ok ? NoContent() : NotFound();
         }
 
@@ -103,7 +109,8 @@ namespace Reserva.Api.Controllers
         [HttpDelete("codigo/{code}")]
         public async Task<IActionResult> CancelByCode(string code)
         {
-            var ok = await _reservaService.CancelarReservaPorCodeAsync(code);
+            var restId = User.RestauranteId();
+            var ok = await _reservaService.CancelarReservaPorCodeAsync(code, restId);
             return ok ? NoContent() : NotFound();
         }
 

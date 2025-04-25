@@ -13,110 +13,49 @@ namespace Reservas.Infrastructure.Repositories
         {
             _context = context;
         }
+        //lectura
 
-        public IEnumerable<Reserva> ObtenerTodas()
+        public IEnumerable<Reserva> ObtenerTodas(Guid restauranteId)
         {
-            return _context.Reservas.ToList();
+            return _context.Reservas.Where(r => r.RestauranteId == restauranteId).ToList(); // Cambiar el tipo de parámetro de int a Guid
         }
 
-        public Reserva? ObtenerPorId(Guid id) // Cambiar el tipo de parámetro de int a Guid
+        public Reserva? ObtenerPorId(Guid id, Guid restauranteId) // Cambiar el tipo de parámetro de int a Guid
         {
-            return _context.Reservas.FirstOrDefault(r => r.Id == id); // Esto ahora compara correctamente dos valores de tipo Guid
+            return _context.Reservas.FirstOrDefault(r => r.Id == id && r.RestauranteId == restauranteId); // Esto ahora compara correctamente dos valores de tipo Guid
         }
 
-        public void CrearReserva(Reserva reserva)
-        {
-            _context.Reservas.Add(reserva);
-            _context.SaveChanges();
-        }
-        public void Crear(Reserva reserva)
-        {
-            _context.Reservas.Add(reserva);
-            _context.SaveChanges();
-        }
+        public bool ExistePorCode(string code, Guid restauranteId)
+=> _context.Reservas.Any(r => r.Codigo == code && r.RestauranteId == restauranteId);
 
-        public async Task<(bool Disponible, string? Error, string Code)> CrearReservaAsync(Application.Dtos.ReservaCreateDto dto)
-        {
-            var turno = await _context.Turnos
-                .Include(t => t.Reservas)
-                .FirstOrDefaultAsync(t => t.Id == dto.TurnoId);
-            if (turno == null)
-            {
-                return (false, "Turno no encontrado.", null);
-            }
-            var comensalesYaReservados = turno.Reservas
-                .Where(r => r.FechaReserva.Date == dto.FechaReserva.Date)
-                .Sum(r => r.NumeroComensales);
-            if (comensalesYaReservados + dto.NumeroComensales > turno.Capacidad)
-            {
-                return (false, "No hay suficiente capacidad en el turno seleccionado.", null);
-            }
-            var reserva = new Reserva
-            {
-                NombreCliente = dto.NombreCliente,
-                Email= dto.Email,
-                FechaReserva = dto.FechaReserva,
-                NumeroComensales = dto.NumeroComensales,
-                Notas = dto.Notas,
-                TurnoId = dto.TurnoId
-            };
-            _context.Reservas.Add(reserva);
-            await _context.SaveChangesAsync();
-            return (true, null, reserva.Codigo);
-        }
+        public Reserva? ObtenerPorCode(string code, Guid restauranteId)
+            => _context.Reservas.FirstOrDefault(r => r.Codigo == code && r.RestauranteId == restauranteId);
 
-
-        public void Actualizar(Reserva reserva)
-        {
-            _context.Reservas.Update(reserva);
-            _context.SaveChanges();
-        }
-
-        public async Task<Turno?> ObtenerTurnoConReservasPorIdAsync(int turnoId)
+        public async Task<Turno?> ObtenerTurnoConReservasPorIdAsync(int turnoId, Guid restauranteId)
         {
             return await _context.Turnos
                 .Include(t => t.Reservas)
-                .FirstOrDefaultAsync(t => t.Id == turnoId);
+                .FirstOrDefaultAsync(t => t.Id == turnoId && t.RestauranteId == restauranteId);
         }
 
-        public async Task GuardarCambiosAsync()
+        //Escritura
+        public void Crear(Reserva reserva)
         {
-            await _context.SaveChangesAsync();
+            _context.Reservas.Add(reserva);
         }
-        public bool ExistePorCodigo(string codigo)
+        public void Actualizar(Reserva reserva)
         {
-            return _context.Reservas.Any(r => r.Codigo == codigo);
-        }
-        public Reserva? ObtenerPorCodigo(string codigo)
-        {
-            return _context.Reservas.FirstOrDefault(r => r.Codigo == codigo);
+            _context.Reservas.Update(reserva);  
         }
         public void Eliminar(Reserva reserva)
         {
             _context.Reservas.Remove(reserva);
-            _context.SaveChanges();
         }
-        public void Eliminar(Guid id)
+        public async Task GuardarCambiosAsync()
         {
-            var reserva = ObtenerPorId(id);
-            if (reserva != null)
-            {
-                _context.Reservas.Remove(reserva);
-                _context.SaveChanges();
-            }
+            await _context.SaveChangesAsync();
         }
-        public bool ExistePorCode(string code)
-       => _context.Reservas.Any(r => r.Codigo== code);
 
-        public Reserva? ObtenerPorCode(string code)
-            => _context.Reservas.FirstOrDefault(r => r.Codigo== code);
-
-
-        public void EliminarReserva(Reserva reserva)
-        {
-            _context.Reservas.Remove(reserva);
-            _context.SaveChanges();
-        }
 
     }
 }

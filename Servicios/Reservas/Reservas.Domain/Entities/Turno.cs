@@ -6,6 +6,7 @@ namespace Reservas.Domain.Entities
     {
         public int Id { get; set; }
 
+        public Guid RestauranteId { get; set; } // Clave foránea para el restaurante al que pertenece el turno
         public required string Nombre { get; set; } = null!; //"Turno de la mañana", "Turno de la tarde", etc.
 
         public required TimeSpan HoraInicio { get; set; } // Hora de inicio del turno

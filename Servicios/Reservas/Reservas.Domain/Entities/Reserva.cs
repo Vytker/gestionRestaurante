@@ -8,6 +8,7 @@ namespace Reservas.Domain.Entities
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public Guid Id { get; set; }
+        public Guid RestauranteId { get; set; } // Clave foránea para el restaurante al que pertenece la reserva
 
         [Required]
         [StringLength(50)]

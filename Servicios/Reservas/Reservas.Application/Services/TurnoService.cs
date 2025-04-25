@@ -13,15 +13,16 @@ namespace Reservas.Application.Services
             _turnoRepository = turnoRepository;
         }
 
-        public async Task<IEnumerable<Turno>> ObtenerTodosAsync()
+        public async Task<IEnumerable<Turno>> ObtenerTodosAsync(Guid restauranteId)
         {
-            return await _turnoRepository.ObtenerTodosAsync();
+            return await _turnoRepository.ObtenerTodosAsync(restauranteId);
         }
-        public async Task<Turno?> ObtenerTurnoPorIdAsync(int id)
+        public async Task<Turno?> ObtenerTurnoPorIdAsync(int id, Guid restauranteId)
         {
-            return await _turnoRepository.ObtenerPorIdAsync(id);
+            return await _turnoRepository.ObtenerPorIdAsync(id, restauranteId);
         }
-        public async Task CrearTurnoAsync(TurnoCreateDto turnoDto)
+
+        public async Task CrearTurnoAsync(TurnoCreateDto turnoDto, Guid restauranteId)
         {
             if(string.IsNullOrWhiteSpace(turnoDto.Nombre))
             {
@@ -36,16 +37,21 @@ namespace Reservas.Application.Services
                 throw new ArgumentException("La hora de inicio debe ser menor que la hora de fin.");
             }
             // Verificar si ya existe un turno con el mismo nombre
-            var turnosExistentes = await _turnoRepository.ObtenerTodosAsync();
+            var turnosExistentes = (await _turnoRepository.ObtenerTodosAsync(restauranteId))
+                                    .Where(t => !t.Eliminado);
+
             var solapado = turnosExistentes.Any(t => t.Nombre == turnoDto.Nombre &&
                 ((turnoDto.HoraInicio >= t.HoraInicio && turnoDto.HoraInicio < t.HoraFin) ||
                 (turnoDto.HoraFin > t.HoraInicio && turnoDto.HoraFin <= t.HoraFin)));
+
+
             if (solapado)
                 throw new InvalidOperationException("Ya existe un turno con el mismo nombre y horario.");
 
             // Crear el nuevo turno
             var turno = new Turno
             {
+                RestauranteId = restauranteId,
                 Nombre = turnoDto.Nombre,
                 Capacidad = turnoDto.Capacidad,
                 HoraInicio = turnoDto.HoraInicio,
@@ -54,15 +60,12 @@ namespace Reservas.Application.Services
             _turnoRepository.Crear(turno);
             await _turnoRepository.GuardarCambiosAsync();
         }
-        public async Task<IEnumerable<Turno>> ObtenerTodosTurnosAsync()
-        {
-            return await _turnoRepository.ObtenerTodosAsync();
-        }
 
-        public async Task<bool> EditarTurnoAsync(int id,TurnoUpdateDto dto)
+
+        public async Task<bool> EditarTurnoAsync(int id,TurnoUpdateDto dto, Guid restauranteId)
         {
 
-            var turno = await _turnoRepository.ObtenerPorIdAsync(id);
+            var turno = await _turnoRepository.ObtenerPorIdAsync(id, restauranteId);
 
             if (turno == null)
                 throw new Exception("Turno no encontrado.");
@@ -82,8 +85,9 @@ namespace Reservas.Application.Services
 
             if (dto.HoraInicio is not null || dto.HoraFin is not null)
             {
-                var otros = await _turnoRepository.ObtenerTodosAsync();
-                var solapado1 = otros.Where(t => t.Id != id)
+                var otros = (await _turnoRepository.ObtenerTodosAsync(restauranteId))
+                            .Where(t => !t.Eliminado);
+                var solapado1 = otros.Where(t => t.Id != dto.Id)
                     .Any(t =>
                         (dto.HoraInicio ?? turno.HoraInicio) < t.HoraFin &&
                         (dto.HoraFin ?? turno.HoraFin) > t.HoraInicio);
@@ -93,7 +97,7 @@ namespace Reservas.Application.Services
             }
 
             //validar solapamiento con otros turnos (excluyendo el actual)
-            var otrosTurnos = await _turnoRepository.ObtenerTodosAsync();
+            var otrosTurnos = await _turnoRepository.ObtenerTodosAsync(restauranteId);
             var solapado = otrosTurnos.Where(t => t.Id != dto.Id).Any(t => dto.HoraInicio < t.HoraFin && dto.HoraFin > t.HoraInicio);
 
             if (solapado)
@@ -121,9 +125,9 @@ namespace Reservas.Application.Services
             return true; // Add return statement to complete the method
         }
 
-        public async Task<bool> EliminarTurnoAsync(int id)
+        public async Task<bool> EliminarTurnoAsync(int id, Guid restauranteId)
         {
-            var turno = await _turnoRepository.ObtenerPorIdAsync(id);
+            var turno = await _turnoRepository.ObtenerPorIdAsync(id, restauranteId);
             if (turno == null || turno.Eliminado)
                 throw new Exception("Turno no encontrado o eliminado.");
             // Marcar como eliminado
