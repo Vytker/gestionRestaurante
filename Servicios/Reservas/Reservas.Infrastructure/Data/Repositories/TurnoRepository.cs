@@ -11,6 +11,7 @@ public class TurnoRepository : ITurnoRepository
 
     public async Task<IEnumerable<Turno>> ObtenerTodosAsync(Guid restaurantId) =>
         await _context.Turnos
+                       .Include(t => t.Reservas)
                       .Where(t => !t.Eliminado && t.RestauranteId == restaurantId)
                       .ToListAsync();
 

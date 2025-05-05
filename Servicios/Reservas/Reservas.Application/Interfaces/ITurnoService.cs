@@ -11,6 +11,10 @@ namespace Reservas.Application.Interfaces
         Task<bool> EditarTurnoAsync(int id,TurnoUpdateDto dto, Guid restauranteId);
         Task<bool> EliminarTurnoAsync(int id, Guid restauranteId);
 
+        /// <summary>
+        /// Devuelve, para una fecha dada, todos los turnos con su capacidad restante (slots).
+        /// </summary>
+        Task<IEnumerable<SlotDto>> ObtenerSlotsDisponiblesAsync(Guid restauranteId, DateTime fecha);
 
 
     }

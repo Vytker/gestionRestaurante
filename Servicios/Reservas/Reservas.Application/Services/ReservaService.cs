@@ -8,14 +8,25 @@ namespace Reservas.Application.Services
     public class ReservaService : IReservaService
     {
         private readonly IReservaRepository _reservaRepository;
+        private readonly ITurnoRepository _turnoRepository;
         private readonly INotificationService _notificationService;
+        private IReservaRepository object1;
+        private INotificationService object2;
 
         public ReservaService(
             IReservaRepository reservaRepository,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            ITurnoRepository turnoRepository)
         {
             _reservaRepository = reservaRepository;
             _notificationService = notificationService;
+            _turnoRepository = turnoRepository;
+        }
+
+        public ReservaService(IReservaRepository object1, INotificationService object2)
+        {
+            this.object1 = object1;
+            this.object2 = object2;
         }
 
         public IEnumerable<Reserva> ObtenerTodasReservas(Guid restauranteId)
@@ -74,12 +85,29 @@ namespace Reservas.Application.Services
             return (true, null, codigo);
         }
 
-        public void ActualizarEstadoReserva(Guid id, Guid restauranteId,Reserva.EstadoReserva nuevoEstado)
+        public async Task ActualizarEstadoReserva(Guid id, Guid restauranteId,Reserva.EstadoReserva nuevoEstado)
         {
             var reserva = _reservaRepository.ObtenerPorId(id, restauranteId)
                 ?? throw new KeyNotFoundException("Reserva no encontrada.");
+            Console.WriteLine($"[Service] Reserva encontrada: ID={reserva.Id}, Estado actual={reserva.Estado}");
+            
+
+            // Verificar si el estado ya es el mismo
+            if (reserva.Estado == nuevoEstado)
+            {
+                Console.WriteLine("[Service] El estado ya es el mismo. No se requiere actualización.");
+                return;
+            }
+            
             reserva.Estado = nuevoEstado;
+            Console.WriteLine($"[Service] Cambiando estado de {reserva.Estado} a {nuevoEstado}.");
+
             _reservaRepository.Actualizar(reserva);
+            Console.WriteLine($"[Service] Estado actualizado a: {nuevoEstado}");
+
+            await _reservaRepository.GuardarCambiosAsync();
+            Console.WriteLine("[Service] Cambios guardados en la base de datos.");
+
         }
 
 
@@ -122,6 +150,37 @@ namespace Reservas.Application.Services
             await _reservaRepository.GuardarCambiosAsync();
             return true;
         }
+
+        public async Task<IEnumerable<SlotDto>> ObtenerSlotsDisponiblesAsync(Guid restauranteId, DateTime fecha)
+        {
+            // 1) traemos todos los turnos activos
+            var turnos =await _turnoRepository.ObtenerTodosAsync(restauranteId);
+
+            var fechaDate = fecha.Date;
+            var slots = new List<SlotDto>();
+
+            foreach (var turno in turnos)
+            {
+                // 2) calculamos cuántos ya están reservados
+                var reservados = turno.Reservas
+                    .Where(r => r.FechaReserva.Date == fechaDate
+                    && r.Estado != Reserva.EstadoReserva.Cancelada)
+                    .Sum(r => r.NumeroComensales);
+
+                var libres = turno.Capacidad - reservados;
+                if (libres > 0)
+                {
+                    slots.Add(new SlotDto(
+                        TurnoId: turno.Id,
+                        Hora: turno.HoraInicio,
+                        PlazasDisponibles: libres
+                    ));
+                }
+            }
+
+            return slots;
+        }
+
 
     }
 }

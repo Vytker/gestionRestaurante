@@ -7,7 +7,7 @@ using Reservas.Domain.Entities;
 public interface IReservaService
 {
     IEnumerable<Reserva> ObtenerTodasReservas(Guid restauranteId);
-    void ActualizarEstadoReserva(Guid restauranteId,Guid id, Reserva.EstadoReserva nuevoEstado);
+    Task ActualizarEstadoReserva(Guid restauranteId,Guid id, Reserva.EstadoReserva nuevoEstado);
 
     // Corrección: Cambiar la firma del método para usar un tipo de retorno genérico adecuado.
     Task<(bool Disponible, string? Error, string Codigo)> CrearReservaAsync(Guid restauranteId,ReservaCreateDto reservaDto);
@@ -17,4 +17,5 @@ public interface IReservaService
     //existe por codigo
 
 
+    Task<IEnumerable<SlotDto>> ObtenerSlotsDisponiblesAsync(Guid restauranteId, DateTime fecha);
 }
