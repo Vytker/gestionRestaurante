@@ -58,13 +58,31 @@ public class RestaurantesController : ControllerBase
     public async Task<IActionResult> AddStaff(Guid id, AddStaffDto dto)
     {
         //el owner solo puede actuar sobre su restaurante
-        var claimRest = User.FindFirst("restaurantId")?.Value;
+        var claimRest = User.FindFirst("restauranteId")?.Value;
         if(claimRest == null || claimRest != id.ToString())
-            return Forbid();
+        {
+            return Forbid(claimRest, id.ToString());
+        }
+            
 
         await _svc.AsignarUsuarioAsync(id, dto);
         return Ok(new { message = "Usuario asignado correctamente" });
 
 
     }
+
+    // RestaurantesController.cs
+    [Authorize(Roles = "Owner")]
+    [HttpGet("{id:guid}/staff/list")]
+    public async Task<IActionResult> ListarStaff(Guid id)
+    {
+        //  Solo el Owner del restaurante puede ver su staff
+        var claimRest = User.FindFirst("restauranteId")?.Value;
+        if (!Guid.TryParse(claimRest, out var restId) || restId != id)
+            return Forbid();
+
+        var staff = await _svc.ListarStaffAsync(id);
+        return Ok(staff);
+    }
+
 }

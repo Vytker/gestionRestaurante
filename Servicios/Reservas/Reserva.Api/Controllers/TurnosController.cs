@@ -8,8 +8,7 @@ namespace Reserva.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Owner")] // Fixed the CS1016 error by combining roles into a single string
-    [Authorize(Roles = "SuperAdmin")]
+    
     public class TurnosController : ControllerBase
     {
         private readonly ITurnoService _turnoService;
@@ -17,7 +16,12 @@ namespace Reserva.Api.Controllers
         {
             _turnoService = turnoService;
         }
+
+        
+
         [HttpPost]
+        [Authorize(Roles = "Owner")] // Fixed the CS1016 error by combining roles into a single string
+        [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> Create([FromBody] TurnoCreateDto dto)
         {
             try
@@ -41,27 +45,29 @@ namespace Reserva.Api.Controllers
             }
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
-        {
-            var restId = User.RestauranteId();
-            var turnos = await _turnoService.ObtenerTodosAsync(restId);
 
-            return turnos.Any() ? Ok(turnos) : NoContent(); // Si hay turnos
-        }
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(int id)
+        public async Task<IActionResult> Get(int id, [FromQuery] Guid restauranteId)
         {
-            var restId = User.RestauranteId();
-            var turno = await _turnoService.ObtenerTurnoPorIdAsync(id, restId);
-            if (turno == null)
-            {
-                return NotFound(new { error = "Turno no encontrado" });
-            }
-            return Ok(turno);
+            var turno = await _turnoService.ObtenerTurnoPorIdAsync(id, restauranteId);
+            return turno is null
+                 ? NotFound(new { error = "Turno no encontrado" })
+                 : Ok(turno);
+        }
+
+        /// GET /api/turnos/slots?restauranteId={id}&fecha={yyyy-MM-dd}
+        [HttpGet("slots")]
+        public async Task<IActionResult> GetSlots(
+            [FromQuery] Guid restauranteId,
+            [FromQuery] DateTime fecha)
+        {
+            var slots = await _turnoService.ObtenerSlotsDisponiblesAsync(restauranteId, fecha);
+            return slots.Any() ? Ok(slots) : NoContent();
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Owner")] // Fixed the CS1016 error by combining roles into a single string
+        [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> Update(int id, [FromBody] TurnoUpdateDto dto)
         {
             dto.Id = id;
@@ -87,6 +93,8 @@ namespace Reserva.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Owner")] // Fixed the CS1016 error by combining roles into a single string
+        [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> Delete(int id)
         {
             var restId = User.RestauranteId();

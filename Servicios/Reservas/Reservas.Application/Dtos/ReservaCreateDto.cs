@@ -1,5 +1,6 @@
 ﻿
 // This file is part of the Reservas project.
+using Reservas.Application.Validation;
 using System.ComponentModel.DataAnnotations;
 
 namespace Reservas.Application.Dtos
@@ -11,12 +12,13 @@ namespace Reservas.Application.Dtos
         public string NombreCliente { get; set; } = string.Empty;
         [Required(ErrorMessage = "El email del cliente es obligatorio.")]
         [StringLength(100, ErrorMessage = "El email del cliente no puede exceder los 100 caracteres.")]
+        [EmailAddress]
         public string Email { get; set; } = string.Empty;
         [Required(ErrorMessage = "La fecha de reserva es obligatoria.")]
-
+        [FutureDateHours(1,ErrorMessage="La reserva debe hacerse con al menos 1 hora de antelacion")]
         public DateTime FechaReserva { get; set; }
         [Required(ErrorMessage = "El número de comensales es obligatorio.")]
-        [Range(1, 100, ErrorMessage = "El número de comensales debe estar entre 1 y 100.")]
+        [Range(1, 20, ErrorMessage = "El número de comensales debe estar entre 1 y 20, Grupo grande llamar al restaurante.")]
 
         public int NumeroComensales { get; set; }
         [StringLength(500, ErrorMessage = "Las notas no pueden exceder los 500 caracteres.")]

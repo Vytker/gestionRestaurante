@@ -3,6 +3,9 @@ using Identity.Application.Interfaces;
 using Identity.Domain.Entities;
 using Identity.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using BCrypt.Net;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Identity.Application.Services
 {
@@ -24,11 +27,18 @@ namespace Identity.Application.Services
             };
             _context.Restaurantes.Add(restaurante);
 
-            //buscar el usuario que sera owner
-            var owner = await _context.Users.FindAsync(dto.OwnerUserId) ?? throw new Exception("No se ha encontrado el usuario owner");
-
-            owner.Role = "Owner"; // ascender a rol owner en user, no en la clase auxiliar userrestaurante, ya que leemos el rol de user abajo
-
+            var owner = new User
+            {
+                UserName = dto.Owner.UserName,
+                Email = dto.Owner.Email,
+                FirstName = dto.Owner.FirstName,
+                LastName = dto.Owner.LastName,
+                Password = BCrypt.Net.BCrypt.HashPassword(dto.Owner.Password), // Método que implemente el hashing
+                CreatedAt = DateTime.UtcNow,
+                LastUpdatedAt = DateTime.UtcNow,
+                Role = "Owner" // Se asigna directamente este rol
+            };
+            _context.Users.Add(owner);
 
             //insertar fila en userrestaurntes con rol owner
             _context.UserRestaurantes.Add(new UserRestaurante
@@ -45,7 +55,8 @@ namespace Identity.Application.Services
         {
             var rest = await _context.Restaurantes.FindAsync(restauranteId) ?? throw new Exception("No se ha encontrado el restaurante");
             //buscar el usuario que sera staff
-            var user = await _context.Users.FindAsync(dto.UserId) ?? throw new Exception("No se ha encontrado el usuario");
+            var user = await _context.Users
+                .SingleOrDefaultAsync(u => u.Email == dto.Email) ?? throw new Exception("No se ha encontrado el usuario");
             //insertar fila en userrestaurntes con rol staff
             if(await _context.UserRestaurantes.AnyAsync(ur => ur.UserId == user.Id && ur.RestaurantId == restauranteId))
             {
@@ -58,6 +69,12 @@ namespace Identity.Application.Services
                 RestaurantId = restauranteId,
                 Role = "Staff"
             };
+            //comando para actualizar el usuario con el mismo id el rol de user a staff
+
+            //'no poner el rol de staff en el usuario, ya que el rol se asigna en la tabla userrestaurantes'
+            //user.Role = "Staff"; // No es necesario cambiar el rol del usuario, ya que se maneja en la tabla UserRestaurante
+            //user.Role = "Staff";
+           // _context.Users.Update(user);
             _context.UserRestaurantes.Add(userRestaurante);
             await _context.SaveChangesAsync();
         }
@@ -74,5 +91,20 @@ namespace Identity.Application.Services
                 .Select(r => new RestaurantSummaryDto(r.Id, r.Nombre, r.Slug))
                 .FirstOrDefaultAsync();
         }
+
+        public async Task<IEnumerable<StaffDto>> ListarStaffAsync(Guid restauranteId)
+        {
+            return await _context.UserRestaurantes
+                .Where(ur => ur.RestaurantId == restauranteId && ur.Role == "Staff")
+                .Select(ur => new StaffDto(
+                    ur.User.Id,
+                    ur.User.UserName,
+                    ur.User.Email,
+                    $"{ur.User.FirstName} {ur.User.LastName}"
+                ))
+                .ToListAsync();
+        }
+
+
     }
 }

@@ -1,8 +1,11 @@
+using HealthChecks.UI.Client;
 using Identity.Application.Interfaces;
 using Identity.Application.Services;
 using Identity.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using System.Security.Claims;
@@ -43,18 +46,32 @@ builder.Services.AddAuthentication("Bearer")
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
-    });
+    options.AddPolicy("FrontendsPolicy", policy =>
+        policy.WithOrigins("http://localhost:3333", "http://localhost:3334")
+              .AllowAnyMethod()
+              .AllowAnyHeader());
 });
 
-
-
+builder.Services.AddSwaggerGen();
 
 builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
+
+// 1) Health checks básicos
+builder.Services.AddHealthChecks()
+    .AddNpgSql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        name: "PostgreSQL",
+        failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded)
+    .AddCheck("self", () =>
+        Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("OK"));
+
+// 2) Health check UI (endpoints JSON)
+builder.Services.AddHealthChecksUI()
+    .AddInMemoryStorage();
+
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 
@@ -81,10 +98,28 @@ using (var scope = app.Services.CreateScope())
 
 
 // app.UseHttpsRedirection();
+app.MapHealthChecks("/hc", new HealthCheckOptions
+{
+    Predicate = _ => true,
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+});
+app.MapHealthChecksUI(options => {
+    options.UIPath = "/hc-ui";
+    options.ApiPath = "/hc-api";
+});
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
 
 app.UseAuthentication();
 app.UseAuthorization();
 
+
+app.UseCors("FrontendsPolicy");
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())

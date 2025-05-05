@@ -136,5 +136,33 @@ namespace Reservas.Application.Services
             await _turnoRepository.GuardarCambiosAsync();
             return true;
         }
+        public async Task<IEnumerable<SlotDto>> ObtenerSlotsDisponiblesAsync(Guid restauranteId, DateTime fecha)
+        {
+            // 1) Traer todos los turnos no eliminados del restaurante
+            var turnos = await _turnoRepository.ObtenerTodosAsync(restauranteId); // Await the Task to get the actual IEnumerable<Turno>
+
+            var fechaDate = fecha.Date;
+            var slots = new List<SlotDto>();
+
+            foreach (var turno in turnos) // Now 'turnos' is an IEnumerable<Turno>
+            {
+                // 2) Calcular cuántos comensales ya hay reservados en ese turno y fecha
+                var reservados = turno.Reservas
+                    .Where(r => r.FechaReserva.Date == fechaDate)
+                    .Sum(r => r.NumeroComensales);
+
+                var libres = turno.Capacidad - reservados;
+                if (libres > 0)
+                {
+                    slots.Add(new SlotDto(
+                        turno.Id,
+                        turno.HoraInicio,
+                        libres
+                    ));
+                }
+            }
+
+            return slots;
+        }
     }
 }

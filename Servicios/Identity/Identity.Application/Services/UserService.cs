@@ -86,6 +86,8 @@ namespace Identity.Application.Services
 
             var claims = new List<Claim>
             {
+                // claim para user name
+                new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName),
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(ClaimTypes.Role, ur?.Role ?? user.Role ?? "User"),
                 new Claim("restauranteId", ur?.RestaurantId.ToString() ?? string.Empty)

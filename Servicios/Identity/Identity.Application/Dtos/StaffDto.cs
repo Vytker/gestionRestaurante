@@ -1,0 +1,1 @@
+﻿public record StaffDto(Guid Id, string UserName, string Email, string FullName);
