@@ -1,5 +1,4 @@
 
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +12,9 @@ using Reservas.Application.Interfaces;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Prometheus;
-
+using Microsoft.AspNetCore.OData;
+using Microsoft.OData.ModelBuilder;
+using Microsoft.AspNetCore.OData.Routing.Attributes;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ReservasDbContext>(options =>
@@ -29,8 +30,23 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 
 
 builder.Services.AddControllers()
-    .AddDataAnnotationsLocalization();  // no imprescindible, pero carga atributos
-
+    .AddDataAnnotationsLocalization()  // no imprescindible, pero carga atributos
+    .AddOData(opt =>
+    {
+        var odataBuilder = new ODataConventionModelBuilder();
+        odataBuilder.EntitySet<Reservas.Domain.Entities.Reserva>("Reservas"); 
+        opt.AddRouteComponents("api/odata", odataBuilder.GetEdmModel())
+            .Select()
+            .Filter()
+            .OrderBy()
+            .Expand()
+            .Count()
+            .SetMaxTop(100); // máximo 100 elementos por página
+        
+        opt.EnableQueryFeatures();
+        
+    });
+Console.WriteLine("Modelo EDM generado correctamente.");
 // Desarrollo: caché en memoria
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
@@ -48,13 +64,7 @@ builder.Services.AddHealthChecks()
 builder.Services.AddHealthChecksUI()
     .AddInMemoryStorage();
 
-builder.Services.AddAutoQueryable(options =>
-{
-    options.DefaultPageSize = 10; // Tamaño de página por defecto
-    options.MaxPageSize = 100; // Tamaño máximo de página
-    options.DefaultOrderBy = "FechaReserva"; // Ordenación por defecto
-    options.HandleNullPropagation = true; // Manejar valores nulos
-});
+
 
 // Configurar la autenticación con JWT
 builder.Services.AddAuthentication(options =>
@@ -89,7 +99,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddControllers();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -152,7 +162,6 @@ app.MapMetrics();
 app.UseAuthentication();
 
 app.UseAuthorization();
-
 
 
 app.MapControllers();
