@@ -1,13 +1,17 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OData.Query;
+using Microsoft.AspNetCore.OData.Routing.Attributes;
 using Reservas.Application.Dtos;
 using Shared.Extensions;
-using AutoQueryable.Extensions;
+
+
 
 namespace Reserva.Api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/reservas")]
     public class ReservasController : ControllerBase
     {
         
@@ -20,7 +24,7 @@ namespace Reserva.Api.Controllers
             
         }
 
-        [HttpGet("slots")]
+        [HttpGet("/api/reservas/slots", Order = -1)]
         public async Task<IActionResult> GetSlots(
        [FromQuery] Guid restauranteId,
        [FromQuery] DateTime fecha)
@@ -32,55 +36,24 @@ namespace Reserva.Api.Controllers
             return Ok(slots);
         }
 
+
         [HttpGet]
-        [Authorize(Roles ="Owner,Staff,SuperAdmin")]
-        public IActionResult GetAll([FromQuery] string? query)
+        [EnableQuery]
+        [Authorize(Roles = "Owner,Staff,SuperAdmin")]
+        public IActionResult GetAll()
 
         {
             var restId = User.RestauranteId();
-            var reservas = _reservaService.ObtenerTodasReservas(restId).AsQueryable();
+            Console.WriteLine($"[DEBUG] restId = {restId}");
+            var reservas = _reservaService.ObtenerTodasReservas(restId).ToList();
             if (!reservas.Any())
             {
                 return NoContent();  // Si no hay reservas
             }
-            try
-            {
-                // Si no se pasa un query, devuelve los datos por defecto
-                if (string.IsNullOrEmpty(query))
-                {
-                    var defaultResult = reservas
-                        .OrderBy(r => r.FechaReserva) // Ordenar por fecha de reserva
-                        .Take(10) // Mostrar las primeras 10 reservas
-                        .ToList();
-
-                    return Ok(new
-                    {
-                        Data = defaultResult,
-                        Metadata = new
-                        {
-                            PageNumber = 1,
-                            PageSize = 10,
-                            TotalItemCount = reservas.Count(),
-                            PageCount = (int)Math.Ceiling(reservas.Count() / 10.0),
-                            HasNextPage = reservas.Count() > 10,
-                            HasPreviousPage = false
-                        }
-                    });
-                }
-
-                // Procesar el query con AutoQueryable
-                var result = reservas.AutoQueryable(query);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[Controller] Error al procesar la consulta: {ex.Message}");
-                return BadRequest(new { error = "Error al procesar la consulta.", details = ex.Message });
-            }
-
+            Console.WriteLine($"[DEBUG] restId = {restId}");
+            return Ok(reservas);
+            
         }
-
-
 
 
         // 2️⃣ Crear reserva (público, no autoriza)

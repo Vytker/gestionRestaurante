@@ -20,6 +20,7 @@ namespace Reservas.Infrastructure.Repositories
             return _context.Reservas.Where(r => r.RestauranteId == restauranteId).ToList(); // Cambiar el tipo de parámetro de int a Guid
         }
 
+
         public Reserva? ObtenerPorId(Guid id, Guid restauranteId) // Cambiar el tipo de parámetro de int a Guid
         {
             return _context.Reservas.FirstOrDefault(r => r.Id == id && r.RestauranteId == restauranteId); // Esto ahora compara correctamente dos valores de tipo Guid
