@@ -29,8 +29,11 @@ namespace Reservas.Application.Services
             this.object2 = object2;
         }
 
-        public IEnumerable<Reserva> ObtenerTodasReservas(Guid restauranteId)
+        public IQueryable<Reserva> ObtenerTodas()
+        => _reservaRepository.ObtenerTodas();
+        public IQueryable<Reserva> ObtenerTodasReservas(Guid restauranteId)
             => _reservaRepository.ObtenerTodas(restauranteId);
+
 
         //crear reserva
         public async Task<(bool Disponible, string? Error, string Codigo)> CrearReservaAsync(Guid restauranteId, ReservaCreateDto reservaDto)
@@ -85,32 +88,46 @@ namespace Reservas.Application.Services
             return (true, null, codigo);
         }
 
-        public async Task ActualizarEstadoReserva(Guid id, Guid restauranteId,Reserva.EstadoReserva nuevoEstado)
+        public async Task ActualizarEstadoReserva(Guid reservaId,
+                                                Guid restauranteId,
+                                                Reserva.EstadoReserva nuevoEstado)
         {
-            var reserva = _reservaRepository.ObtenerPorId(id, restauranteId)
-                ?? throw new KeyNotFoundException("Reserva no encontrada.");
-            Console.WriteLine($"[Service] Reserva encontrada: ID={reserva.Id}, Estado actual={reserva.Estado}");
-            
+            var reserva = _reservaRepository.ObtenerPorId(reservaId, restauranteId)
+                       ?? throw new KeyNotFoundException("Reserva no encontrada.");
 
-            // Verificar si el estado ya es el mismo
+            Console.WriteLine($"[Service] Reserva encontrada: ID={reserva.Id}, Estado actual={reserva.Estado}");
+
             if (reserva.Estado == nuevoEstado)
             {
                 Console.WriteLine("[Service] El estado ya es el mismo. No se requiere actualización.");
                 return;
             }
-            
+
             reserva.Estado = nuevoEstado;
-            Console.WriteLine($"[Service] Cambiando estado de {reserva.Estado} a {nuevoEstado}.");
+            Console.WriteLine($"[Service] Cambiando estado a {nuevoEstado}.");
 
             _reservaRepository.Actualizar(reserva);
-            Console.WriteLine($"[Service] Estado actualizado a: {nuevoEstado}");
-
             await _reservaRepository.GuardarCambiosAsync();
             Console.WriteLine("[Service] Cambios guardados en la base de datos.");
 
+            // Envío de notificación
+            await _notificationService.NotifyReservationStateChangedAsync(reserva);
         }
+        public async Task ActualizarEstadoReservaSuperAdminAsync(Guid reservaId,
+                                                         Reserva.EstadoReserva nuevoEstado)
+        {
+            // Recupera SIN filtrar por restaurante
+            var reserva = _reservaRepository.ObtenerPorId(reservaId)
+                       ?? throw new KeyNotFoundException("Reserva no encontrada.");
 
+            if (reserva.Estado == nuevoEstado) return;
 
+            reserva.Estado = nuevoEstado;
+            _reservaRepository.Actualizar(reserva);
+            await _reservaRepository.GuardarCambiosAsync();
+
+            await _notificationService.NotifyReservationStateChangedAsync(reserva);
+        }
 
         public async Task<ReservaDto?> ObtenerReservaPorCodeAsync(string code, Guid restauranteId)
         {
@@ -171,9 +188,9 @@ namespace Reservas.Application.Services
                 if (libres > 0)
                 {
                     slots.Add(new SlotDto(
-                        TurnoId: turno.Id,
-                        Hora: turno.HoraInicio,
-                        PlazasDisponibles: libres
+                        turno.Id,
+                        turno.HoraInicio,
+                        libres
                     ));
                 }
             }
@@ -181,6 +198,79 @@ namespace Reservas.Application.Services
             return slots;
         }
 
+        public async Task<int> ContarReservasAsync(
+                                                    Guid restauranteId,
+                                                    DateTime desde,
+                                                    DateTime hasta,
+                                                    string? estado = null)
+        {
+            var todas = await _reservaRepository.ObtenerPorRangoAsync(
+                restauranteId, desde, hasta);
 
+            if (!string.IsNullOrWhiteSpace(estado))
+            {
+                // Filtra por el estado que venga en string
+                todas = todas.Where(r => r.Estado.ToString() == estado).ToList();
+            }
+
+            return todas.Count();
+        }
+
+        public async Task<IEnumerable<(DateTime Fecha, int Total)>> ObtenerSeriesDiariasAsync(
+                                                                                            Guid restauranteId,
+                                                                                            DateTime desde,
+                                                                                            DateTime hasta,
+                                                                                            string? estado = null)
+        {
+            var todas = await _reservaRepository.ObtenerPorRangoAsync(
+                restauranteId, desde, hasta);
+
+            if (!string.IsNullOrWhiteSpace(estado))
+            {
+                todas = todas.Where(r => r.Estado.ToString() == estado).ToList();
+            }
+
+            return todas
+              .GroupBy(r => r.FechaReserva.Date)
+              .Select(g => (Fecha: g.Key, Total: g.Count()))
+              .OrderBy(x => x.Fecha);
+        }
+
+
+        // Nuevo: series horarias con filtro de estado
+        public async Task<IEnumerable<HourlySeriesDto>> ObtenerSeriesHorariasAsync(
+     Guid restauranteId,
+     DateTime dia,
+     string? estado = null)
+        {
+            // Normalizamos al rango [00:00 día … 00:00 día + 1)
+            var inicio = dia.Date;
+            var fin = inicio.AddDays(1);
+
+            // Traemos todas las reservas en ese rango
+            var todas = await _reservaRepository.ObtenerPorRangoAsync(restauranteId, inicio, fin);
+
+            // Si llega un estado, filtramos
+            if (!string.IsNullOrWhiteSpace(estado))
+            {
+                todas = todas.Where(r => r.Estado.ToString()
+                                                .Equals(estado, StringComparison.OrdinalIgnoreCase))
+                             .ToList();
+            }
+
+            // Agrupamos por hora y contamos
+            var agrupado = todas
+                .GroupBy(r => r.FechaReserva.Hour)
+                .Select(g => new HourlySeriesDto(g.Key, g.Count()))
+                .ToList();
+
+            // Rellenamos horas faltantes con cero
+            var completos = Enumerable.Range(0, 24)
+                .Select(h => agrupado.FirstOrDefault(x => x.Hour == h)
+                             ?? new HourlySeriesDto(h, 0))
+                .ToList();
+
+            return completos;
+        }
     }
 }

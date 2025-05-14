@@ -17,11 +17,16 @@ namespace Reserva.Api.Controllers
             _turnoService = turnoService;
         }
 
-        
+        [HttpGet]// GET /api/turnos?restauranteId=....
+        [Authorize(Roles = "Owner,SuperAdmin")]
+        public async Task<IActionResult> GetAll([FromQuery] Guid restauranteId)
+        {
+            var turnos = await _turnoService.ObtenerTurnosAsync(restauranteId);
+            return turnos.Any() ? Ok(turnos) : NoContent();
+        }
 
         [HttpPost]
-        [Authorize(Roles = "Owner")] // Fixed the CS1016 error by combining roles into a single string
-        [Authorize(Roles = "SuperAdmin")]
+        [Authorize(Roles = "Owner,SuperAdmin")]
         public async Task<IActionResult> Create([FromBody] TurnoCreateDto dto)
         {
             try
@@ -66,8 +71,8 @@ namespace Reserva.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Owner")] // Fixed the CS1016 error by combining roles into a single string
-        [Authorize(Roles = "SuperAdmin")]
+        [Authorize(Roles = "Owner,SuperAdmin")] // Fixed the CS1016 error by combining roles into a single string
+        
         public async Task<IActionResult> Update(int id, [FromBody] TurnoUpdateDto dto)
         {
             dto.Id = id;
@@ -93,8 +98,7 @@ namespace Reserva.Api.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Owner")] // Fixed the CS1016 error by combining roles into a single string
-        [Authorize(Roles = "SuperAdmin")]
+        [Authorize(Roles = "Owner,SuperAdmin")]
         public async Task<IActionResult> Delete(int id)
         {
             var restId = User.RestauranteId();

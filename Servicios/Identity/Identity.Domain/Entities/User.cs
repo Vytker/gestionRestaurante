@@ -10,6 +10,7 @@ namespace Identity.Domain.Entities
         public required string Password { get; set; }
         public required string FirstName { get; set; }
         public required string LastName { get; set; }
+        public string? Telefono { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime LastUpdatedAt { get; set; }
         public string? Role { get; set; }

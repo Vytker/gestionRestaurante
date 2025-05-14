@@ -17,6 +17,8 @@ using Microsoft.OData.ModelBuilder;
 using Microsoft.AspNetCore.OData.Routing.Attributes;
 
 var builder = WebApplication.CreateBuilder(args);
+
+
 builder.Services.AddDbContext<ReservasDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 // Add services to the container.

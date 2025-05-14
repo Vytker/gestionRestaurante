@@ -1,15 +1,18 @@
-using HealthChecks.UI.Client;
+Ôªøusing HealthChecks.UI.Client;
 using Identity.Application.Interfaces;
 using Identity.Application.Services;
 using Identity.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using System.Security.Claims;
 using System.Text;
+using HealthChecks.NpgSql;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<IdentityDbContext>(options =>
@@ -17,20 +20,23 @@ builder.Services.AddDbContext<IdentityDbContext>(options =>
 // Add services to the container.
 //builder.Services.AddScoped<IReservaService, ReservaService>();
 builder.Services.AddScoped<IUserService, UserService>();
-// Configurar la autenticaciÛn con JWT
+// Configurar la autenticaciÔøΩn con JWT
 builder.Services.AddScoped<IRestauranteService, RestauranteService>();
 
 //temporal quitar
-var jwtKey = builder.Configuration["Jwt:Key"];
+var jwtKey = builder.Configuration["Jwt:Key"]!;
+
 if (string.IsNullOrEmpty(jwtKey))
 {
-    throw new Exception("°La clave JWT no se est· leyendo!");
+    throw new Exception("La clave JWT no se est√° leyendo!");
 }
 
 Console.WriteLine($"Clave JWT: {jwtKey} ({jwtKey.Length} caracteres)");
 
-builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer("Bearer", options =>
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)  // "Bearer"
+    .AddJwtBearer(options =>
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -38,8 +44,7 @@ builder.Services.AddAuthentication("Bearer")
             ValidateAudience = false,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             RoleClaimType = ClaimTypes.Role
         };
     });
@@ -52,18 +57,16 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader());
 });
 
-builder.Services.AddSwaggerGen();
 
 builder.Services.AddAuthorization();
 
 builder.Services.AddControllers();
 
-// 1) Health checks b·sicos
+// 1) Health checks bÔøΩsicos
 builder.Services.AddHealthChecks()
-    .AddNpgSql(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        name: "PostgreSQL",
-        failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded)
+                .AddNpgSql(
+                    builder.Configuration.GetConnectionString("DefaultConnection")!,
+                    name: "PostgreSQL")
     .AddCheck("self", () =>
         Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("OK"));
 
@@ -77,6 +80,34 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.WebHost.UseUrls("http://*:5000");
 
+
+builder.Services.AddSwaggerGen(c =>
+{
+    // ‚ë† Definici√≥n del esquema de seguridad ‚ÄúBearer‚Äù
+    var jwtScheme = new OpenApiSecurityScheme
+    {
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Description = "Pegue **solo** el token (sin la palabra Bearer)",
+        Reference = new OpenApiReference
+        {
+            Type = ReferenceType.SecurityScheme,
+            Id = "Bearer"          // ‚Üê la clave
+        }
+    };
+    c.AddSecurityDefinition(jwtScheme.Reference.Id, jwtScheme);
+
+    // ‚ë° Requisito global: todas las operaciones usar√°n el esquema
+    var requirement = new OpenApiSecurityRequirement
+    {
+        [jwtScheme] = Array.Empty<string>()
+    };
+    c.AddSecurityRequirement(requirement);
+});
+
 var app = builder.Build();
 app.UseCors("AllowAll");
 // Apply migrations at startup
@@ -87,7 +118,7 @@ using (var scope = app.Services.CreateScope())
     try
     {
         db.Database.OpenConnection();
-        Console.WriteLine("ConexiÛn exitosa a la base de datos.");
+        Console.WriteLine("ConexiÔøΩn exitosa a la base de datos.");
         db.Database.CloseConnection();
     }
     catch (PostgresException ex)

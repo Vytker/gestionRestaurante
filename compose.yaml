@@ -41,7 +41,7 @@ services:
   identity-api:
     build:
       context: .
-      dockerfile: Servicios/Identity/Identity.Api/Dockerfile
+      dockerfile: Servicios/Identity/Identity.Api/Dockerfile  
     container_name: identity-api
     command: ["dotnet", "Identity.Api.dll", "migrate"]
     depends_on:
