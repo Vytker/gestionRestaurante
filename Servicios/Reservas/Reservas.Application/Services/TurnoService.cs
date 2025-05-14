@@ -13,6 +13,14 @@ namespace Reservas.Application.Services
             _turnoRepository = turnoRepository;
         }
 
+        public async Task<IEnumerable<TurnoDto>> ObtenerTurnosAsync(Guid restauranteId)
+        {
+            var turnos = await _turnoRepository.ObtenerTodosAsync(restauranteId);
+
+            return turnos.Select(t =>
+                new TurnoDto(t.Id, t.Nombre, t.HoraInicio, t.HoraFin, t.Capacidad, t.Eliminado));
+        }
+
         public async Task<IEnumerable<Turno>> ObtenerTodosAsync(Guid restauranteId)
         {
             return await _turnoRepository.ObtenerTodosAsync(restauranteId);

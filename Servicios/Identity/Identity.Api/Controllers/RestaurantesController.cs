@@ -53,16 +53,20 @@ public class RestaurantesController : ControllerBase
 
 
     // Owner delega Staff
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,SuperAdmin")]
     [HttpPost("{id:guid}/staff")]
     public async Task<IActionResult> AddStaff(Guid id, AddStaffDto dto)
     {
         //el owner solo puede actuar sobre su restaurante
-        var claimRest = User.FindFirst("restauranteId")?.Value;
-        if(claimRest == null || claimRest != id.ToString())
+        if(!User.IsInRole("SuperAdmin"))
         {
-            return Forbid(claimRest, id.ToString());
+           var claimRest = User.FindFirst("restauranteId")?.Value;
+             if(claimRest == null || claimRest != id.ToString())
+              {
+                return Forbid(claimRest, id.ToString());
+              }
         }
+        
             
 
         await _svc.AsignarUsuarioAsync(id, dto);
@@ -72,15 +76,18 @@ public class RestaurantesController : ControllerBase
     }
 
     // RestaurantesController.cs
-    [Authorize(Roles = "Owner")]
+    [Authorize(Roles = "Owner,SuperAdmin")]
     [HttpGet("{id:guid}/staff/list")]
     public async Task<IActionResult> ListarStaff(Guid id)
     {
-        //  Solo el Owner del restaurante puede ver su staff
-        var claimRest = User.FindFirst("restauranteId")?.Value;
-        if (!Guid.TryParse(claimRest, out var restId) || restId != id)
+        //  Solo el Owner del restaurante puede ver su staff o cualquier superadmin
+        if(!User.IsInRole("SuperAdmin"))
+        {
+            var claimRest = User.FindFirst("restauranteId")?.Value;
+            if (!Guid.TryParse(claimRest, out var restId) || restId != id)
             return Forbid();
-
+        }
+        
         var staff = await _svc.ListarStaffAsync(id);
         return Ok(staff);
     }

@@ -19,6 +19,9 @@ namespace Reservas.Application.Dtos
         [Required(ErrorMessage = "La capacidad es obligatoria.")]
         [Range(1, int.MaxValue, ErrorMessage = "La capacidad debe ser mayor a 0.")]
         public int Capacidad { get; set; } // Capacidad máxima de reservas para este turno
+
+        // Solo obligatorio para SuperAdmin
+        public Guid RestauranteId { get; set; }
     }
 }
 

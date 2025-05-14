@@ -12,17 +12,19 @@ using Microsoft.Extensions.Configuration;
 using System.IdentityModel.Tokens.Jwt;
 
 
+
 namespace Identity.Application.Services
 {
     public class UserService : IUserService
     {
         private readonly IdentityDbContext _context;
         private readonly IConfiguration _config;
-
+        
         public UserService(IdentityDbContext context, IConfiguration config)
         {
             _context = context;
             _config = config;
+            
         }
         
         public async Task<bool> RegisterAsync(RegisterDto dto)
@@ -104,5 +106,48 @@ namespace Identity.Application.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
+        /* ---------- PERFIL ---------- */
+        public async Task<UserProfileDto?> GetProfileAsync(Guid id)
+        {
+            var u = await _context.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+            return u == null
+                ? null
+                : new UserProfileDto(
+                    u.Id,
+                    u.Email,
+                    u.FirstName,
+                    u.LastName,
+                    u.Telefono ?? string.Empty // Ensure Telefono is not null
+                );
+        }
+
+        // Replacing the line causing the error in the ChangePasswordAsync method
+
+        public async Task<bool> UpdateProfileAsync(Guid id, UpdateProfileDto dto)
+        {
+            var u = await _context.Users.FindAsync(id);
+            if (u == null) return false;
+
+            u.FirstName = dto.FirstName ?? u.FirstName;
+            u.LastName = dto.LastName ?? u.LastName;
+            u.Telefono = dto.Telefono ?? u.Telefono;
+            u.LastUpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        public async Task<bool> ChangePasswordAsync(Guid id, string current, string next)
+        {
+            var u = await _context.Users.FindAsync(id);
+            if (u == null) return false;
+            if (!BCrypt.Net.BCrypt.Verify(current, u.Password)) return false;
+
+            u.Password = BCrypt.Net.BCrypt.HashPassword(next);
+            u.LastUpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+       
     }
 }

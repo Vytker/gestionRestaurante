@@ -6,6 +6,7 @@ namespace Reservas.Application.Interfaces
     public interface ITurnoService
     {
         Task<IEnumerable<Turno>> ObtenerTodosAsync(Guid restauranteId);
+        Task<IEnumerable<TurnoDto>> ObtenerTurnosAsync(Guid restauranteId);
         Task CrearTurnoAsync(TurnoCreateDto turnoDto, Guid restauranteId);
         Task<Turno?> ObtenerTurnoPorIdAsync(int id, Guid restauranteId);
         Task<bool> EditarTurnoAsync(int id,TurnoUpdateDto dto, Guid restauranteId);

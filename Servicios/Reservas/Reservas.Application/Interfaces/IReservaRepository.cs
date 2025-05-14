@@ -4,9 +4,10 @@ using Reservas.Domain.Entities;
 //Es la interfaz de repositorio que define qué operaciones se pueden hacer con la base de datos (sin saber cómo se hacen).
 public interface IReservaRepository
 {
-    IEnumerable<Reserva> ObtenerTodas(Guid restauranteId);                          // Para listar reservas
-    Reserva? ObtenerPorId(Guid id, Guid restauranteId);       
-    
+    IQueryable<Reserva> ObtenerTodas();
+    IQueryable<Reserva> ObtenerTodas(Guid restauranteId);                          // Para listar reservas
+    Reserva? ObtenerPorId(Guid id, Guid restauranteId);
+    Reserva? ObtenerPorId(Guid id);
     bool ExistePorCode(string code, Guid restauranteId);
     Reserva? ObtenerPorCode(string code, Guid restauranteId);
                                                              
@@ -21,7 +22,7 @@ public interface IReservaRepository
     
     Task GuardarCambiosAsync();
 
-
+    Task<IEnumerable<Reserva>> ObtenerPorRangoAsync(Guid restauranteId, DateTime desde, DateTime hasta);
 
 }
 

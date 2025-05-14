@@ -5,5 +5,6 @@ namespace Reservas.Application.Interfaces
     {
         Task NotifyReservationCreatedAsync(Reserva reserva);
         //Esto permite cambiar el mecanismo (SMTP, SendGrid, WhatsApp…) sin tocar la lógica de negocio.
+        Task NotifyReservationStateChangedAsync(Reserva reserva);
     }
 }

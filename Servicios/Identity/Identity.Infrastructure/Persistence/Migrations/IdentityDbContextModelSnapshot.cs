@@ -75,6 +75,9 @@ namespace Identity.Infrastructure.Persistence.Migrations
                     b.Property<string>("Role")
                         .HasColumnType("text");
 
+                    b.Property<string>("Telefono")
+                        .HasColumnType("text");
+
                     b.Property<string>("UserName")
                         .IsRequired()
                         .HasColumnType("text");

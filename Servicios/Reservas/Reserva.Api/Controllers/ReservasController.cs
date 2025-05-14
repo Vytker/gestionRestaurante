@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
-using Microsoft.AspNetCore.OData.Routing.Attributes;
 using Reservas.Application.Dtos;
 using Shared.Extensions;
 
@@ -37,22 +36,27 @@ namespace Reserva.Api.Controllers
         }
 
 
-        [HttpGet]
-        [EnableQuery]
+    
+        [HttpGet("/api/odata/Reservas")]
+        [EnableQuery]         
         [Authorize(Roles = "Owner,Staff,SuperAdmin")]
-        public IActionResult GetAll()
-
+        public IQueryable GetAll([FromQuery] Guid? restauranteId = null)
         {
-            var restId = User.RestauranteId();
-            Console.WriteLine($"[DEBUG] restId = {restId}");
-            var reservas = _reservaService.ObtenerTodasReservas(restId).ToList();
-            if (!reservas.Any())
+            //SuperAdmin
+            if (User.IsInRole("SuperAdmin"))
             {
-                return NoContent();  // Si no hay reservas
+                //  - Sin parámetro: devuelve TODAS las reservas
+                if (restauranteId is null)
+                    return _reservaService.ObtenerTodas();
+
+                //  - Con parámetro: filtra por el restaurante indicado
+                return _reservaService.ObtenerTodasReservas(restauranteId.Value);
             }
-            Console.WriteLine($"[DEBUG] restId = {restId}");
-            return Ok(reservas);
-            
+
+            // ─Owner / Staff
+            //restringidos a su propio restaurante:
+            var restIdClaim = User.RestauranteId();
+            return _reservaService.ObtenerTodasReservas(restIdClaim);
         }
 
 
@@ -84,11 +88,20 @@ namespace Reserva.Api.Controllers
             // Verifica si la reserva existe
             try
             {
-                var restId = User.RestauranteId();
-                Console.WriteLine($"[Controller] ID del restaurante: {restId}");
-                await _reservaService.ActualizarEstadoReserva(id, restId, nuevoEstado);
-                Console.WriteLine("[Controller] Estado actualizado correctamente.");
-                return NoContent();
+
+                if(User.IsInRole("SuperAdmin"))
+                {
+                    await _reservaService.ActualizarEstadoReservaSuperAdminAsync(id, nuevoEstado);
+                    Console.WriteLine("[Controller] Estado actualizado correctamente por SuperAdmin.");
+                }
+                else
+                {
+                    var restId = User.RestauranteId();
+                    // Si no es SuperAdmin, solo actualiza el estado
+                    await _reservaService.ActualizarEstadoReserva(id, restId, nuevoEstado);
+                    Console.WriteLine("[Controller] Estado actualizado correctamente por Owner/Staff.");
+                }
+                    return NoContent();
             }
             catch (KeyNotFoundException)
             {
@@ -131,5 +144,56 @@ namespace Reserva.Api.Controllers
             return ok ? NoContent() : NotFound();
         }
 
+
+
+        [Authorize(Roles = "Owner,Staff,SuperAdmin")]
+        [HttpGet("total")]
+        public async Task<IActionResult> GetTotal(
+    [FromQuery] Guid restauranteId,
+    [FromQuery] DateTime fechaDesde,
+    [FromQuery] DateTime fechaHasta,
+    [FromQuery] string? estado = null       // ← nuevo parámetro opcional
+)
+        {
+            // validaciones fechaDesde<=fechaHasta, etc. si lo deseas
+
+            var total = await _reservaService.ContarReservasAsync(
+                restauranteId, fechaDesde, fechaHasta, estado);
+
+            return Ok(new { total });
+        }
+
+        [Authorize(Roles = "Owner,Staff,SuperAdmin")]
+        [HttpGet("series")]
+        public async Task<IActionResult> GetSeries(
+            [FromQuery] Guid restauranteId,
+            [FromQuery] DateTime fechaDesde,
+            [FromQuery] DateTime fechaHasta,
+            [FromQuery] string? estado = null       // ← nuevo parámetro opcional
+        )
+        {
+            var series = await _reservaService.ObtenerSeriesDiariasAsync(
+                restauranteId, fechaDesde, fechaHasta, estado);
+
+            var result = series
+              .Select(x => new {
+                  fecha = x.Fecha.ToString("yyyy-MM-dd"),
+                  total = x.Total
+              });
+
+            return Ok(result);
+        }
+
+        [Authorize(Roles = "Owner,Staff,SuperAdmin")]
+        [HttpGet("series/hourly")]
+        public async Task<IActionResult> GetHourlySeries(
+    [FromQuery] Guid restauranteId,
+    [FromQuery] DateTime fecha,
+    [FromQuery] string? estado = null)
+        {
+            var horas = await _reservaService.ObtenerSeriesHorariasAsync(restauranteId, fecha, estado);
+            // Ya vienen en el formato { Hour, Total }
+            return Ok(horas);
+        }
     }
 }

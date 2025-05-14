@@ -6,8 +6,11 @@ using Reservas.Domain.Entities;
 
 public interface IReservaService
 {
-    IEnumerable<Reserva> ObtenerTodasReservas(Guid restauranteId);
+    IQueryable<Reserva> ObtenerTodas();
+    IQueryable<Reserva> ObtenerTodasReservas(Guid restauranteId);
+
     Task ActualizarEstadoReserva(Guid restauranteId,Guid id, Reserva.EstadoReserva nuevoEstado);
+    Task ActualizarEstadoReservaSuperAdminAsync(Guid id, Reserva.EstadoReserva nuevoEstado);
 
     // Corrección: Cambiar la firma del método para usar un tipo de retorno genérico adecuado.
     Task<(bool Disponible, string? Error, string Codigo)> CrearReservaAsync(Guid restauranteId,ReservaCreateDto reservaDto);
@@ -16,6 +19,21 @@ public interface IReservaService
     Task<bool> CancelarReservaPorCodeAsync(string code, Guid restauranteId);
     //existe por codigo
 
-
     Task<IEnumerable<SlotDto>> ObtenerSlotsDisponiblesAsync(Guid restauranteId, DateTime fecha);
+
+    //contar cuantas reservas hay en un rango de fechas
+    Task<int> ContarReservasAsync(
+    Guid restauranteId,
+    DateTime desde,
+    DateTime hasta,
+    string? estado = null);
+    //devuelve un listado por dia de fecha total
+    Task<IEnumerable<(DateTime Fecha, int Total)>> ObtenerSeriesDiariasAsync(
+    Guid restauranteId,
+    DateTime desde,
+    DateTime hasta,
+    string? estado = null);
+
+    Task<IEnumerable<HourlySeriesDto>> ObtenerSeriesHorariasAsync(
+    Guid restauranteId, DateTime dia, string? estado);
 }
