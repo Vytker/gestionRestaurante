@@ -6,7 +6,7 @@ namespace Turnos.Application.Dtos
     {
         public Guid Id { get; set; }
         public Guid EmpleadoId { get; set; }
-        public DateTime FechaHoraInicio { get; set; }
-        public DateTime FechaHoraFin { get; set; }
+        public TimeSpan FechaHoraInicio { get; set; }
+        public TimeSpan FechaHoraFin { get; set; }
     }
 }

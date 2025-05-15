@@ -25,5 +25,10 @@ namespace Turnos.Domain.Entities
         {
             return Horario.SolapaCon(otro.Horario);
         }
+        public void UpdateHorario(IntervaloTiempo nuevo)
+        {
+            Horario = nuevo;
+        }
+
     }
 }

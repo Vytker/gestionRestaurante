@@ -20,8 +20,8 @@ namespace Turnos.Application.Handlers
             var shifts = await _context.Turnos
                 .AsNoTracking()
                 .Where(t => t.EmpleadoId == request.EmpleadoId
-                         && t.Horario.Inicio >= request.Desde
-                         && t.Horario.Fin <= request.Hasta)
+                         && t.Horario.Inicio >= request.Desde.TimeOfDay // Convert DateTime to TimeSpan
+                         && t.Horario.Fin <= request.Hasta.TimeOfDay)  // Convert DateTime to TimeSpan
                 .OrderBy(t => t.Horario.Inicio)
                 .Select(t => new ShiftDto
                 {

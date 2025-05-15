@@ -141,13 +141,44 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - grafana_data:/var/lib/grafana
+  turnos_db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: turnos-db
+    restart: unless-stopped
+    environment:
+      SA_PASSWORD: "CHANGE_ME"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1434:1433"
+    volumes:
+      - turnos_db_data:/var/opt/mssql
+    networks:
+      - reservanet
 
+  turnos_api:
+    build:
+      context: .
+      dockerfile: Servicios/Turnos/Turnos.Api/Dockerfile
+    container_name: turnos-api
+    depends_on:
+      - turnos_db
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Jwt__Key=CHANGE_ME
+      - ConnectionStrings__DefaultConnection=Server=turnos-db,1433;Database=TurnosDb;User=sa;Password=CHANGE_ME;Encrypt=True;TrustServerCertificate=True;
+    ports:
+      - "7070:8080" 
+    restart: unless-stopped
+    networks:
+      - reservanet
+  
 volumes:
   reserva_db_data:
   kong_data:
   konga_data:
   identity_db_data:
   grafana_data:  
+  turnos_db_data:  
 networks:
   reservanet:
     driver: bridge
