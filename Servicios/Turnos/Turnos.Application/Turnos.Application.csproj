@@ -12,10 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Commands\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Turnos.Infrastructure\Turnos.Infrastructure.csproj" />
   </ItemGroup>
 

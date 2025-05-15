@@ -3,6 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Turnos.Infrastructure.Persistence;
 using Turnos.Infrastructure.Repositories;
 using MediatR;
+using Turnos.Application.Handlers;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,12 +18,64 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<TurnosDbContext>(options =>
     options.UseSqlServer(connectionString));
 
+// 4. Registrar MediatR (busca handlers en el assembly de Application)
+
+var myAllowedOrigins = new[] { "http://127.0.0.1:8002" }; // front en Laravel
+// 1) Definir la política CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAdminPortal", policy =>
+    {
+        policy
+          .WithOrigins(myAllowedOrigins)   // tu portal admin
+          .AllowAnyHeader()
+          .AllowAnyMethod()
+          .AllowCredentials();
+    });
+});
+
+
+builder.Services.AddMediatR(cfg =>
+{
+    
+    cfg.RegisterServicesFromAssemblyContaining<CreateSlotCommandHandler>();
+    cfg.RegisterServicesFromAssemblyContaining<DeleteAssignmentCommandHandler>();
+    cfg.RegisterServicesFromAssemblyContaining<GetAllShiftsQueryHandler>();
+    cfg.RegisterServicesFromAssemblyContaining<GetAllSlotsQueryHandler>();
+    cfg.RegisterServicesFromAssemblyContaining<CreateAssignmentCommand>();
+    cfg.RegisterServicesFromAssemblyContaining<GetAssignmentsByDateQueryHandler>();
+    cfg.RegisterServicesFromAssemblyContaining<CreateShiftCommandHandler>();
+    cfg.RegisterServicesFromAssemblyContaining<DeleteShiftCommandHandler>();
+    cfg.RegisterServicesFromAssemblyContaining<UpdateShiftCommandHandler>();
+    cfg.RegisterServicesFromAssemblyContaining<GetShiftsByEmployeeQueryHandler>();
+});
+
 // 3. Registrar repositorio (inversión de control)
 builder.Services.AddScoped<ITurnoRepository, TurnoRepository>();
 
-// 4. Registrar MediatR (busca handlers en el assembly de Application)
-builder.Services.AddMediatR(typeof(Turnos.Application.Queries.GetShiftsByEmployeeQuery).Assembly);
+builder.Services.AddAuthentication(options =>
+{
+    // Este es el esquema “por defecto” que ASP usa para [Authorize]
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false; // en dev
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
+        )
+    };
+});
 
+builder.Services.AddAuthorization();
 // 5. Registrar controladores y Swagger (opcional)
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -34,12 +91,16 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+app.UseCors("AllowAdminPortal");
+
 // 6. Middleware: Swagger en desarrollo
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+
 
 // 7. Middleware comunes
 app.UseHttpsRedirection();

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Turnos.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Turnos.Infrastructure.Persistence;
 namespace Turnos.Infrastructure.Migrations
 {
     [DbContext(typeof(TurnosDbContext))]
-    partial class TurnosDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250514183524_turnos3")]
+    partial class turnos3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -91,14 +94,6 @@ namespace Turnos.Infrastructure.Migrations
                             b1.Property<Guid>("SlotId")
                                 .HasColumnType("uniqueidentifier");
 
-                            b1.Property<TimeSpan>("Fin")
-                                .HasColumnType("time")
-                                .HasColumnName("HorarioFin");
-
-                            b1.Property<TimeSpan>("Inicio")
-                                .HasColumnType("time")
-                                .HasColumnName("HorarioInicio");
-
                             b1.HasKey("SlotId");
 
                             b1.ToTable("Slots");
@@ -118,13 +113,13 @@ namespace Turnos.Infrastructure.Migrations
                             b1.Property<Guid>("TurnoId")
                                 .HasColumnType("uniqueidentifier");
 
-                            b1.Property<TimeSpan>("Fin")
-                                .HasColumnType("time")
-                                .HasColumnName("HorarioFin");
+                            b1.Property<DateTime>("Fin")
+                                .HasColumnType("datetime2")
+                                .HasColumnName("FechaHoraFin");
 
-                            b1.Property<TimeSpan>("Inicio")
-                                .HasColumnType("time")
-                                .HasColumnName("HorarioInicio");
+                            b1.Property<DateTime>("Inicio")
+                                .HasColumnType("datetime2")
+                                .HasColumnName("FechaHoraInicio");
 
                             b1.HasKey("TurnoId");
 
