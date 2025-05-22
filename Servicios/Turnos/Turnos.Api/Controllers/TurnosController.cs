@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Turnos.Application.Commands;
 using Turnos.Application.Dtos;
 using Turnos.Application.Queries;
@@ -27,21 +28,23 @@ namespace Turnos.Api.Controllers
         }
             
 
-        [HttpPost("slots"), Authorize(Roles = "Owner,SuperAdmin")]
+        [HttpPost("slots"), Authorize(Roles = "Owner")]
         public async Task<IActionResult> CreateSlot([FromBody] CreateSlotDto dto)
         {
-            var isSuper = User.IsInRole("SuperAdmin");
-            Guid? ownerId = isSuper ? null
-                                    : Guid.Parse(User.FindFirst("sub").Value);
+            var ownerIdClaim = User.FindFirst(JwtRegisteredClaimNames.Sub) ?? User.FindFirst(ClaimTypes.NameIdentifier);
+            if (ownerIdClaim == null)
+                return Forbid("Missing sub claim.");
 
-            var cmd = new CreateSlotCommand(dto.Name, dto.Start, dto.End, ownerId, isSuper);
+            var ownerId = Guid.Parse(ownerIdClaim.Value);
+
+            var cmd = new CreateSlotCommand(dto.Name, dto.Start, dto.End, ownerId);
             var slot = await _mediator.Send(cmd);
             return CreatedAtAction(nameof(GetAllSlots), new { id = slot.Id }, slot);
         }
 
         
         [HttpPut("slots/{id}")]
-        [Authorize(Roles = "Owner,SuperAdmin")]
+        [Authorize(Roles = "Owner")]
         public async Task<IActionResult> UpdateSlot(
             Guid id,
             [FromBody] UpdateSlotDto dto)
@@ -68,7 +71,7 @@ namespace Turnos.Api.Controllers
         }
 
         [HttpDelete("slots/{id}")]
-        [Authorize(Roles = "Owner,SuperAdmin")]
+        [Authorize(Roles = "Owner")]
         public async Task<IActionResult> DeleteSlot(Guid id)
         {
             var ownerIdClaim = User.FindFirst(JwtRegisteredClaimNames.Sub) ?? User.FindFirst(ClaimTypes.NameIdentifier);
@@ -99,20 +102,21 @@ namespace Turnos.Api.Controllers
             return Ok(list);
         }
 
-        [HttpPost("assignments"), Authorize(Roles = "Owner,SuperAdmin")]
+        [HttpPost("assignments"), Authorize(Roles = "Owner")]
         public async Task<IActionResult> CreateAssignment([FromBody] CreateAssignmentDto dto)
         {
-            var isSuper = User.IsInRole("SuperAdmin");
-            Guid? ownerId = null;
-            if (!isSuper)                   // sólo los Owners necesitan OwnerId
-                ownerId = Guid.Parse(User.FindFirst("sub").Value);
+            var ownerIdClaim = User.FindFirst(JwtRegisteredClaimNames.Sub) ?? User.FindFirst(ClaimTypes.NameIdentifier);
+            if (ownerIdClaim == null)
+                return Forbid("Missing sub claim.");
 
-            var cmd = new CreateAssignmentCommand(dto.SlotId, dto.Date, dto.EmpleadoId, ownerId, isSuper);
+            var ownerId = Guid.Parse(ownerIdClaim.Value);
+
+            var cmd = new CreateAssignmentCommand(dto.SlotId, dto.Date, dto.EmpleadoId, ownerId);
             var asg = await _mediator.Send(cmd);
             return CreatedAtAction(nameof(GetByDate), new { date = dto.Date }, asg);
         }
 
-        [HttpDelete("assignments/{id}"), Authorize(Roles = "Owner,SuperAdmin")]
+        [HttpDelete("assignments/{id}"), Authorize(Roles = "Owner")]
         public async Task<IActionResult> DeleteAssignment(Guid id)
         {
             await _mediator.Send(new DeleteAssignmentCommand(id));
@@ -142,7 +146,7 @@ namespace Turnos.Api.Controllers
 
         
         [HttpPost]
-        [Authorize(Roles = "Owner,SuperAdmin")]
+        [Authorize(Roles = "Owner")]
         public async Task<IActionResult> Create([FromBody] CreateShiftDto dto)
         {
             var ownerId = Guid.Parse(User.FindFirst("sub").Value);

@@ -12,10 +12,10 @@ namespace Turnos.Infrastructure.Configurations
             builder.HasKey(t => t.Id);
 
             builder.Property(t => t.EmpleadoId).IsRequired();
-            builder.Property(t => t.OwnerId).IsRequired();
+            builder.Property(t => t.RestauranteId).IsRequired();
 
             builder.HasIndex(t => t.EmpleadoId);
-            builder.HasIndex(t => t.OwnerId);
+            builder.HasIndex(t => t.RestauranteId);
 
             builder.OwnsOne(t => t.Horario, h =>
             {
