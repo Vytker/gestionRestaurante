@@ -19,9 +19,23 @@ namespace Reserva.Api.Controllers
 
         [HttpGet]// GET /api/turnos?restauranteId=....
         [Authorize(Roles = "Owner,SuperAdmin")]
-        public async Task<IActionResult> GetAll([FromQuery] Guid restauranteId)
+        public async Task<IActionResult> GetAll([FromQuery] Guid? restauranteId = null)
         {
-            var turnos = await _turnoService.ObtenerTurnosAsync(restauranteId);
+            Guid? restId;
+            if (User.IsInRole("SuperAdmin"))
+            {
+                if (restauranteId == null || restauranteId == Guid.Empty)
+                    return BadRequest(new { error = "Debe indicar el restaurante." });
+
+                restId = restauranteId;
+            }
+            else
+            {
+                restId = User.RestauranteId();
+                if (restauranteId != null && restauranteId != restId)
+                    return Forbid();    
+            }
+            var turnos = await _turnoService.ObtenerTurnosAsync(restId);
             return turnos.Any() ? Ok(turnos) : NoContent();
         }
 
@@ -29,10 +43,26 @@ namespace Reserva.Api.Controllers
         [Authorize(Roles = "Owner,SuperAdmin")]
         public async Task<IActionResult> Create([FromBody] TurnoCreateDto dto)
         {
+
+            Guid restauranteId;
+
+            if (User.IsInRole("SuperAdmin"))
+            {
+                if (dto.RestauranteId == Guid.Empty)
+                    return BadRequest(new { error = "Debe indicar el restaurante." });
+                restauranteId = dto.RestauranteId;
+            }
+            else
+            {
+                restauranteId = User.RestauranteId();
+                if (dto.RestauranteId != Guid.Empty && dto.RestauranteId != restauranteId)
+                    return Forbid();
+            }
+
             try
             {
-                var restId = User.RestauranteId();
-                await _turnoService.CrearTurnoAsync(dto, restId);
+                
+                await _turnoService.CrearTurnoAsync(dto, restauranteId);
                 return Ok(new { mensaje = "Turno creado correctamente" });
             }
             catch (ArgumentException ex)
@@ -71,15 +101,30 @@ namespace Reserva.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "Owner,SuperAdmin")] // Fixed the CS1016 error by combining roles into a single string
+        [Authorize(Roles = "Owner,SuperAdmin")]
         
-        public async Task<IActionResult> Update(int id, [FromBody] TurnoUpdateDto dto)
+        public async Task<IActionResult> Update(int id, [FromBody] TurnoUpdateDto dto, [FromQuery] Guid? restauranteId = null)
         {
+
+            Guid restId;
+            if (User.IsInRole("SuperAdmin"))
+            {
+                if (restauranteId == null || restauranteId == Guid.Empty)
+                    return BadRequest(new { error = "Debe indicar el restaurante." });
+                restId = restauranteId.Value;
+            }
+            else
+            {
+                restId = User.RestauranteId();
+                if (restauranteId != null && restauranteId != restId)
+                    return Forbid();
+            }
+
             dto.Id = id;
 
             try
             {
-                var restId = User.RestauranteId();
+                
                 await _turnoService.EditarTurnoAsync(id, dto, restId);
                 return Ok(new { mensaje = "Turno actualizado correctamente" });
             }
@@ -99,9 +144,22 @@ namespace Reserva.Api.Controllers
 
         [HttpDelete("{id}")]
         [Authorize(Roles = "Owner,SuperAdmin")]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> Delete(int id, [FromQuery] Guid? restauranteId = null)
         {
-            var restId = User.RestauranteId();
+
+            Guid restId;
+            if (User.IsInRole("SuperAdmin"))
+            {
+                if (restauranteId == null || restauranteId == Guid.Empty)
+                    return BadRequest(new { error = "Debe indicar el restaurante." });
+                restId = restauranteId.Value;
+            }
+            else
+            {
+                restId = User.RestauranteId();
+                if (restauranteId != null && restauranteId != restId)
+                    return Forbid();
+            }
             var eliminado = await _turnoService.EliminarTurnoAsync(id, restId);
             if (!eliminado) return NotFound();
             return Ok();

@@ -170,14 +170,31 @@ namespace Reservas.Application.Services
 
         public async Task<IEnumerable<SlotDto>> ObtenerSlotsDisponiblesAsync(Guid restauranteId, DateTime fecha)
         {
-            // 1) traemos todos los turnos activos
-            var turnos =await _turnoRepository.ObtenerTodosAsync(restauranteId);
+            
 
             var fechaDate = fecha.Date;
+
+            var zona = TimeZoneInfo.FindSystemTimeZoneById("Europe/Madrid");
+            if (fechaDate < TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, zona).Date)
+            {
+                return Enumerable.Empty<SlotDto>(); // 0 slots
+
+            }
+
+            // 1) traemos todos los turnos activos
+            var turnos =await _turnoRepository.ObtenerTodosAsync(restauranteId);
+            var ahora = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, zona).TimeOfDay;
+            var esHoy = fechaDate == TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, zona).Date;
+
             var slots = new List<SlotDto>();
 
             foreach (var turno in turnos)
             {
+
+                if (esHoy && turno.HoraInicio <= ahora)
+                {
+                    continue;
+                }
                 // 2) calculamos cuántos ya están reservados
                 var reservados = turno.Reservas
                     .Where(r => r.FechaReserva.Date == fechaDate

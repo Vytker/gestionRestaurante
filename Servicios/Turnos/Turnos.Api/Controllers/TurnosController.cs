@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Threading.Tasks;
 using Turnos.Application.Commands;
 using Turnos.Application.Dtos;
 using Turnos.Application.Queries;
@@ -19,7 +18,7 @@ namespace Turnos.Api.Controllers
         public GestionHorariosController(IMediator mediator)
             => _mediator = mediator;
 
-        // ─── Slots ──────────────────────────────────────
+        // ─── Slots
         [HttpGet("slots"), Authorize]
         public async Task<IActionResult> GetAllSlots()
         {
@@ -28,8 +27,24 @@ namespace Turnos.Api.Controllers
         }
             
 
-        [HttpPost("slots"), Authorize(Roles = "Owner")]
+        [HttpPost("slots"), Authorize(Roles = "Owner,SuperAdmin")]
         public async Task<IActionResult> CreateSlot([FromBody] CreateSlotDto dto)
+        {
+            var isSuper = User.IsInRole("SuperAdmin");
+            Guid? ownerId = isSuper ? null
+                                    : Guid.Parse(User.FindFirst("sub").Value);
+
+            var cmd = new CreateSlotCommand(dto.Name, dto.Start, dto.End, ownerId, isSuper);
+            var slot = await _mediator.Send(cmd);
+            return CreatedAtAction(nameof(GetAllSlots), new { id = slot.Id }, slot);
+        }
+
+        
+        [HttpPut("slots/{id}")]
+        [Authorize(Roles = "Owner,SuperAdmin")]
+        public async Task<IActionResult> UpdateSlot(
+            Guid id,
+            [FromBody] UpdateSlotDto dto)
         {
             var ownerIdClaim = User.FindFirst(JwtRegisteredClaimNames.Sub) ?? User.FindFirst(ClaimTypes.NameIdentifier);
             if (ownerIdClaim == null)
@@ -37,12 +52,36 @@ namespace Turnos.Api.Controllers
 
             var ownerId = Guid.Parse(ownerIdClaim.Value);
 
-            var cmd = new CreateSlotCommand(dto.Name, dto.Start, dto.End, ownerId);
-            var slot = await _mediator.Send(cmd);
-            return CreatedAtAction(nameof(GetAllSlots), new { id = slot.Id }, slot);
+            var updated = await _mediator.Send(
+                new UpdateSlotCommand(id, dto.Name, dto.Start, dto.End, ownerId)
+            );
+            return Ok(updated);
         }
 
-        // ─── Assignments ───────────────────────────────
+        // GET /api/v1/gestion-horarios/slots/{id}
+        [HttpGet("slots/{id}"), Authorize]
+        public async Task<IActionResult> GetSlot(Guid id)
+        {
+            var dto = await _mediator.Send(new GetSlotByIdQuery(id));
+            if (dto == null) return NotFound();
+            return Ok(dto);
+        }
+
+        [HttpDelete("slots/{id}")]
+        [Authorize(Roles = "Owner,SuperAdmin")]
+        public async Task<IActionResult> DeleteSlot(Guid id)
+        {
+            var ownerIdClaim = User.FindFirst(JwtRegisteredClaimNames.Sub) ?? User.FindFirst(ClaimTypes.NameIdentifier);
+            if (ownerIdClaim == null)
+                return Forbid("Missing sub claim.");
+
+            var ownerId = Guid.Parse(ownerIdClaim.Value);
+
+            await _mediator.Send(new DeleteSlotCommand(id, ownerId));
+            return NoContent();
+        }
+
+        // ─── Assignments
         [HttpGet("assignments"), Authorize]
         public async Task<IActionResult> GetByDate([FromQuery] DateTime date)
         {
@@ -50,21 +89,30 @@ namespace Turnos.Api.Controllers
             return Ok(list);
         }
 
-        [HttpPost("assignments"), Authorize(Roles = "Owner")]
+        // Despues rango completo:
+        [HttpGet("assignments/range"), Authorize]
+        public async Task<IActionResult> GetInRange(
+            [FromQuery] DateTime start,
+            [FromQuery] DateTime end)
+        {
+            var list = await _mediator.Send(new GetAssignmentsInRangeQuery(start, end));
+            return Ok(list);
+        }
+
+        [HttpPost("assignments"), Authorize(Roles = "Owner,SuperAdmin")]
         public async Task<IActionResult> CreateAssignment([FromBody] CreateAssignmentDto dto)
         {
-            var ownerIdClaim = User.FindFirst(JwtRegisteredClaimNames.Sub) ?? User.FindFirst(ClaimTypes.NameIdentifier);
-            if (ownerIdClaim == null)
-                return Forbid("Missing sub claim.");
+            var isSuper = User.IsInRole("SuperAdmin");
+            Guid? ownerId = null;
+            if (!isSuper)                   // sólo los Owners necesitan OwnerId
+                ownerId = Guid.Parse(User.FindFirst("sub").Value);
 
-            var ownerId = Guid.Parse(ownerIdClaim.Value);
-
-            var cmd = new CreateAssignmentCommand(dto.SlotId, dto.Date, dto.EmpleadoId, ownerId);
+            var cmd = new CreateAssignmentCommand(dto.SlotId, dto.Date, dto.EmpleadoId, ownerId, isSuper);
             var asg = await _mediator.Send(cmd);
             return CreatedAtAction(nameof(GetByDate), new { date = dto.Date }, asg);
         }
 
-        [HttpDelete("assignments/{id}"), Authorize(Roles = "Owner")]
+        [HttpDelete("assignments/{id}"), Authorize(Roles = "Owner,SuperAdmin")]
         public async Task<IActionResult> DeleteAssignment(Guid id)
         {
             await _mediator.Send(new DeleteAssignmentCommand(id));
@@ -92,11 +140,9 @@ namespace Turnos.Api.Controllers
             return Ok(shifts);
         }
 
-        /// <summary>
-        /// POST /api/v1/gestion-horarios
-        /// </summary>
+        
         [HttpPost]
-        [Authorize(Roles = "Owner")]
+        [Authorize(Roles = "Owner,SuperAdmin")]
         public async Task<IActionResult> Create([FromBody] CreateShiftDto dto)
         {
             var ownerId = Guid.Parse(User.FindFirst("sub").Value);

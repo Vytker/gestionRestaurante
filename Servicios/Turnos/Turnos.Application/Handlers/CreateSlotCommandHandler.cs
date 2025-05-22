@@ -13,8 +13,25 @@ public class CreateSlotCommandHandler : IRequestHandler<CreateSlotCommand, SlotD
 
     public async Task<SlotDto> Handle(CreateSlotCommand req, CancellationToken ct)
     {
+
+        
+
+        Guid ownerId;
+        if (req.IsSuperAdmin)
+        {
+            // el superadmin debe indicar el propietario explícitamente
+            if (req.OwnerId is null)
+            throw new InvalidOperationException("Debe indicar OwnerId.");
+        
+            ownerId = req.OwnerId.Value;
+        }
+        else
+        {
+            // lo creó un Owner → viene su Id
+            ownerId = req.OwnerId!.Value;
+        }
         var horario = new IntervaloTiempo(req.Start, req.End);
-        var slot = new Slot(req.Name, horario, req.OwnerId);
+        var slot = new Slot(req.Name, horario, ownerId);
 
         _context.Slots.Add(slot);
         await _context.SaveChangesAsync(ct);

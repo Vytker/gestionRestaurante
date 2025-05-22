@@ -9,7 +9,7 @@ public class TurnoRepository : ITurnoRepository
     private readonly ReservasDbContext _context;
     public TurnoRepository(ReservasDbContext ctx) => _context = ctx;
 
-    public async Task<IEnumerable<Turno>> ObtenerTodosAsync(Guid restaurantId) =>
+    public async Task<IEnumerable<Turno>> ObtenerTodosAsync(Guid? restaurantId) =>
         await _context.Turnos
                        .Include(t => t.Reservas)
                       .Where(t => !t.Eliminado && t.RestauranteId == restaurantId)
