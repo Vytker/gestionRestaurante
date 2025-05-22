@@ -26,15 +26,13 @@ public class CreateAssignmentCommandHandler : IRequestHandler<CreateAssignmentCo
             dtFin = fechaSolo.AddDays(1) + tsFin;
         }
 
-        Guid ownerId = req.IsSuperAdmin ? slot.OwnerId : req.OwnerId!.Value;
-
         // 2) construir correctamente el Assignment
         var asg = new Assignment(
             slotId: slot.Id,
             fechaHoraInicio: dtInicio,
             fechaHoraFin: dtFin,
             empleadoId: req.EmpleadoId,
-            ownerId: ownerId
+            ownerId: req.OwnerId
         );
 
         _context.Assignments.Add(asg);

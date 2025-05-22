@@ -10,18 +10,18 @@ namespace Turnos.Domain.Entities
         public DateTime FechaHoraInicio { get; private set; }
         public DateTime FechaHoraFin { get; private set; }
         public Guid EmpleadoId { get; private set; }
-        public Guid OwnerId { get; private set; }
+        public Guid RestauranteId { get; private set; }
 
         private Assignment() { }
 
-        public Assignment(Guid slotId, DateTime fechaHoraInicio, DateTime fechaHoraFin, Guid empleadoId, Guid ownerId)
+        public Assignment(Guid slotId, DateTime fechaHoraInicio, DateTime fechaHoraFin, Guid empleadoId, Guid restauranteId)
         {
             Id = Guid.NewGuid();
             SlotId = slotId;
             FechaHoraInicio = fechaHoraInicio;
             FechaHoraFin = fechaHoraFin;
             EmpleadoId = empleadoId;
-            OwnerId = ownerId;
+            RestauranteId = restauranteId;
         }
     }
 }

@@ -7,17 +7,17 @@ namespace Turnos.Domain.Entities
     {
         public Guid Id { get; private set; }
         public Guid EmpleadoId { get; private set; }
-        public Guid OwnerId { get; private set; }
+        public Guid RestauranteId { get; private set; }
         public IntervaloTiempo Horario { get; private set; }
 
         private Turno() { }
 
-        public Turno(Guid empleadoId, Guid ownerId, IntervaloTiempo horario)
+        public Turno(Guid empleadoId, Guid restauranteId, IntervaloTiempo horario)
         {
             if (horario == null) throw new ArgumentNullException(nameof(horario));
             Id = Guid.NewGuid();
             EmpleadoId = empleadoId;
-            OwnerId = ownerId;
+            RestauranteId = restauranteId;
             Horario = horario;
         }
 
