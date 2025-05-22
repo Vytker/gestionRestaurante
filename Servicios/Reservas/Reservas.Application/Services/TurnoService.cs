@@ -1,6 +1,8 @@
 ﻿using Reservas.Application.Dtos;
 using Reservas.Application.Interfaces;
 using Reservas.Domain.Entities;
+using System.Runtime.InteropServices;
+using System.Xml.Schema;
 
 
 namespace Reservas.Application.Services
@@ -13,7 +15,7 @@ namespace Reservas.Application.Services
             _turnoRepository = turnoRepository;
         }
 
-        public async Task<IEnumerable<TurnoDto>> ObtenerTurnosAsync(Guid restauranteId)
+        public async Task<IEnumerable<TurnoDto>> ObtenerTurnosAsync(Guid? restauranteId)
         {
             var turnos = await _turnoRepository.ObtenerTodosAsync(restauranteId);
 
@@ -21,7 +23,7 @@ namespace Reservas.Application.Services
                 new TurnoDto(t.Id, t.Nombre, t.HoraInicio, t.HoraFin, t.Capacidad, t.Eliminado));
         }
 
-        public async Task<IEnumerable<Turno>> ObtenerTodosAsync(Guid restauranteId)
+        public async Task<IEnumerable<Turno>> ObtenerTodosAsync(Guid? restauranteId)
         {
             return await _turnoRepository.ObtenerTodosAsync(restauranteId);
         }
@@ -147,13 +149,30 @@ namespace Reservas.Application.Services
         public async Task<IEnumerable<SlotDto>> ObtenerSlotsDisponiblesAsync(Guid restauranteId, DateTime fecha)
         {
             // 1) Traer todos los turnos no eliminados del restaurante
-            var turnos = await _turnoRepository.ObtenerTodosAsync(restauranteId); // Await the Task to get the actual IEnumerable<Turno>
+          
 
             var fechaDate = fecha.Date;
+
+            var zona = TimeZoneInfo.FindSystemTimeZoneById("Europe/Madrid");
+            
+            if(fechaDate < TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, zona).Date)
+            {
+                return Enumerable.Empty<SlotDto>(); // 0 slots
+
+            }
+
+            var turnos = await _turnoRepository.ObtenerTodosAsync(restauranteId); // Await the Task to get the actual IEnumerable<Turno>
+            var ahora = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, zona).TimeOfDay;
+            var esHoy = fechaDate == TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, zona).Date;
+
             var slots = new List<SlotDto>();
 
             foreach (var turno in turnos) // Now 'turnos' is an IEnumerable<Turno>
             {
+                if (esHoy && turno.HoraInicio <= ahora)
+                {
+                    continue;
+                }
                 // 2) Calcular cuántos comensales ya hay reservados en ese turno y fecha
                 var reservados = turno.Reservas
                     .Where(r => r.FechaReserva.Date == fechaDate)

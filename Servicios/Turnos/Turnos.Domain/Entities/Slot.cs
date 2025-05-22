@@ -11,6 +11,7 @@ namespace Turnos.Domain.Entities
         public IntervaloTiempo Horario { get; private set; }
         public Guid OwnerId { get; private set; }
 
+        public bool IsDeleted { get; set; } = false; //soft delete
         private Slot() { } // EF
 
         public Slot(string name, IntervaloTiempo horario, Guid ownerId)

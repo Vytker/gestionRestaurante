@@ -6,10 +6,14 @@ public class CreateSlotCommand : IRequest<SlotDto>
     public string Name { get; }
     public TimeSpan Start { get; }
     public TimeSpan End { get; }
-    public Guid OwnerId { get; }
-
-    public CreateSlotCommand(string name, TimeSpan start, TimeSpan end, Guid ownerId)
+    public Guid? OwnerId { get; }
+    public bool IsSuperAdmin { get; }
+    public CreateSlotCommand(string name, TimeSpan start, TimeSpan end, Guid? ownerId, bool isSuperAdmin)
     {
-        Name = name; Start = start; End = end; OwnerId = ownerId;
+        Name = name;
+        Start = start;
+        End = end;
+        OwnerId = ownerId;
+        IsSuperAdmin = IsSuperAdmin;
     }
 }

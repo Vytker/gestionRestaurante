@@ -13,7 +13,7 @@ namespace Reservas.Application.Interfaces
         // Task UpdateTurnoAsync(Turno turno);
         // Task DeleteTurnoAsync(int id);
         
-        Task<IEnumerable<Turno>> ObtenerTodosAsync(Guid restauranteId);
+        Task<IEnumerable<Turno>> ObtenerTodosAsync(Guid? restauranteId);
         Task<Turno?> ObtenerPorIdAsync(int id, Guid restauranteId);
         void Crear(Turno turno);
         void Actualizar(Turno turno);

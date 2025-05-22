@@ -7,17 +7,19 @@ namespace Turnos.Domain.Entities
     {
         public Guid Id { get; private set; }
         public Guid SlotId { get; private set; }
-        public DateTime Date { get; private set; }        // solo fecha parte
+        public DateTime FechaHoraInicio { get; private set; }
+        public DateTime FechaHoraFin { get; private set; }
         public Guid EmpleadoId { get; private set; }
         public Guid OwnerId { get; private set; }
 
         private Assignment() { }
 
-        public Assignment(Guid slotId, DateTime date, Guid empleadoId, Guid ownerId)
+        public Assignment(Guid slotId, DateTime fechaHoraInicio, DateTime fechaHoraFin, Guid empleadoId, Guid ownerId)
         {
             Id = Guid.NewGuid();
             SlotId = slotId;
-            Date = date.Date;
+            FechaHoraInicio = fechaHoraInicio;
+            FechaHoraFin = fechaHoraFin;
             EmpleadoId = empleadoId;
             OwnerId = ownerId;
         }

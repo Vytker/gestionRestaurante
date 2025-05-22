@@ -10,7 +10,7 @@ public class RestaurantesController : ControllerBase
     private readonly IRestauranteService _svc;
     public RestaurantesController(IRestauranteService svc) => _svc = svc;
 
-    // Sólo SuperAdmin (p.e. un claim "sysadmin")
+    
     // superadmin crea restaurante y asigna owner
     [Authorize(Roles = "SuperAdmin")]
     [HttpPost]
