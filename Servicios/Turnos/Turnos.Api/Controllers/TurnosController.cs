@@ -28,36 +28,25 @@ namespace Turnos.Api.Controllers
         }
             
 
-        [HttpPost("slots"), Authorize(Roles = "Owner")]
+        [HttpPost("slots"), Authorize(Roles = "Owner,SuperAdmin")]
         public async Task<IActionResult> CreateSlot([FromBody] CreateSlotDto dto)
         {
-            var ownerIdClaim = User.FindFirst(JwtRegisteredClaimNames.Sub) ?? User.FindFirst(ClaimTypes.NameIdentifier);
-            if (ownerIdClaim == null)
-                return Forbid("Missing sub claim.");
 
-            var ownerId = Guid.Parse(ownerIdClaim.Value);
-
-            var cmd = new CreateSlotCommand(dto.Name, dto.Start, dto.End, ownerId);
+            var cmd = new CreateSlotCommand(dto.Name, dto.Start, dto.End);
             var slot = await _mediator.Send(cmd);
             return CreatedAtAction(nameof(GetAllSlots), new { id = slot.Id }, slot);
         }
 
         
         [HttpPut("slots/{id}")]
-        [Authorize(Roles = "Owner")]
+        [Authorize(Roles = "Owner,SuperAdmin")]
         public async Task<IActionResult> UpdateSlot(
             Guid id,
             [FromBody] UpdateSlotDto dto)
         {
-            var ownerIdClaim = User.FindFirst(JwtRegisteredClaimNames.Sub) ?? User.FindFirst(ClaimTypes.NameIdentifier);
-            if (ownerIdClaim == null)
-                return Forbid("Missing sub claim.");
 
-            var ownerId = Guid.Parse(ownerIdClaim.Value);
-
-            var updated = await _mediator.Send(
-                new UpdateSlotCommand(id, dto.Name, dto.Start, dto.End, ownerId)
-            );
+            var cmd = new UpdateSlotCommand(id, dto.Name, dto.Start, dto.End);
+            var updated = await _mediator.Send(cmd);
             return Ok(updated);
         }
 
@@ -71,16 +60,12 @@ namespace Turnos.Api.Controllers
         }
 
         [HttpDelete("slots/{id}")]
-        [Authorize(Roles = "Owner")]
+        [Authorize(Roles = "Owner,SuperAdmin")]
         public async Task<IActionResult> DeleteSlot(Guid id)
         {
-            var ownerIdClaim = User.FindFirst(JwtRegisteredClaimNames.Sub) ?? User.FindFirst(ClaimTypes.NameIdentifier);
-            if (ownerIdClaim == null)
-                return Forbid("Missing sub claim.");
+           
 
-            var ownerId = Guid.Parse(ownerIdClaim.Value);
-
-            await _mediator.Send(new DeleteSlotCommand(id, ownerId));
+            await _mediator.Send(new DeleteSlotCommand(id));
             return NoContent();
         }
 
@@ -102,21 +87,17 @@ namespace Turnos.Api.Controllers
             return Ok(list);
         }
 
-        [HttpPost("assignments"), Authorize(Roles = "Owner")]
+        [HttpPost("assignments"), Authorize(Roles = "Owner,SuperAdmin")]
         public async Task<IActionResult> CreateAssignment([FromBody] CreateAssignmentDto dto)
         {
-            var ownerIdClaim = User.FindFirst(JwtRegisteredClaimNames.Sub) ?? User.FindFirst(ClaimTypes.NameIdentifier);
-            if (ownerIdClaim == null)
-                return Forbid("Missing sub claim.");
+           
 
-            var ownerId = Guid.Parse(ownerIdClaim.Value);
-
-            var cmd = new CreateAssignmentCommand(dto.SlotId, dto.Date, dto.EmpleadoId, ownerId);
+            var cmd = new CreateAssignmentCommand(dto.SlotId, dto.Date, dto.EmpleadoId);
             var asg = await _mediator.Send(cmd);
             return CreatedAtAction(nameof(GetByDate), new { date = dto.Date }, asg);
         }
 
-        [HttpDelete("assignments/{id}"), Authorize(Roles = "Owner")]
+        [HttpDelete("assignments/{id}"), Authorize(Roles = "Owner,SuperAdmin")]
         public async Task<IActionResult> DeleteAssignment(Guid id)
         {
             await _mediator.Send(new DeleteAssignmentCommand(id));
@@ -146,12 +127,11 @@ namespace Turnos.Api.Controllers
 
         
         [HttpPost]
-        [Authorize(Roles = "Owner")]
+        [Authorize(Roles = "Owner,SuperAdmin")]
         public async Task<IActionResult> Create([FromBody] CreateShiftDto dto)
         {
-            var ownerId = Guid.Parse(User.FindFirst("sub").Value);
-            var command = new CreateShiftCommand(dto.EmployeeId, dto.Start, dto.End, ownerId);
-            var result = await _mediator.Send(command);
+            var cmd = new CreateShiftCommand(dto.EmployeeId, dto.Start, dto.End);
+            var result = await _mediator.Send(cmd);
 
             return CreatedAtAction(
                 nameof(GetByEmployee),

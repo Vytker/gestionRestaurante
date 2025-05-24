@@ -21,7 +21,9 @@ public class GetAssignmentsByDateQueryHandler : IRequestHandler<GetAssignmentsBy
 
         return await _context.Assignments
             // todas las asignaciones cuyo inicio cae en [from, to)
-            .Where(a => a.FechaHoraInicio >= from
+            .Where(a =>
+            a.RestauranteId == req.RestauranteId &&
+            a.FechaHoraInicio >= from
                      && a.FechaHoraInicio < to)
             .Select(a => new AssignmentDto
             {

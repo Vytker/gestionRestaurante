@@ -1,15 +1,16 @@
 ﻿
 using MediatR;
+using Turnos.Application.Common;
 using Turnos.Application.Dtos;
-public class CreateSlotCommand : IRequest<SlotDto>
+public class CreateSlotCommand : IRequest<SlotDto>, ITenantScoped
 {
     public string Name { get; }
     public TimeSpan Start { get; }
     public TimeSpan End { get; }
-    public Guid OwnerId { get; }
+    public Guid RestauranteId { get; set; }
 
-    public CreateSlotCommand(string name, TimeSpan start, TimeSpan end, Guid ownerId)
+    public CreateSlotCommand(string name, TimeSpan start, TimeSpan end)
     {
-        Name = name; Start = start; End = end; OwnerId = ownerId;
+        Name = name; Start = start; End = end;
     }
 }

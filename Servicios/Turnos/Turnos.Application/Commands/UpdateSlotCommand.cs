@@ -1,5 +1,13 @@
-﻿// UpdateSlotCommand.cs
-using MediatR;
+﻿using MediatR;
+using Turnos.Application.Common;
 
-public record UpdateSlotCommand(Guid SlotId, string Name, TimeSpan Start, TimeSpan End, Guid OwnerId)
-    : IRequest<SlotDto>;
+public record UpdateSlotCommand(
+        Guid SlotId,
+        string Name,
+        TimeSpan Start,
+        TimeSpan End)
+    : IRequest<SlotDto>, ITenantScoped
+{
+    // El pipeline asigna este valor antes de llegar al handler
+    public Guid RestauranteId { get; set; }
+}

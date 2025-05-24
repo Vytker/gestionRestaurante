@@ -7,6 +7,7 @@ using Turnos.Application.Handlers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Turnos.Application.Behaviors;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,6 +18,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 // 2. Registrar DbContext
 builder.Services.AddDbContext<TurnosDbContext>(options =>
     options.UseSqlServer(connectionString));
+
+builder.Services.AddHttpContextAccessor();
 
 // 4. Registrar MediatR (busca handlers en el assembly de Application)
 
@@ -48,6 +51,8 @@ builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssemblyContaining<DeleteShiftCommandHandler>();
     cfg.RegisterServicesFromAssemblyContaining<UpdateShiftCommandHandler>();
     cfg.RegisterServicesFromAssemblyContaining<GetShiftsByEmployeeQueryHandler>();
+
+    cfg.AddOpenBehavior(typeof(TenantResolutionBehavior<,>));
 });
 
 // 3. Registrar repositorio (inversión de control)

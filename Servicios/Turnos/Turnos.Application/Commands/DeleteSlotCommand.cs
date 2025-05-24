@@ -1,12 +1,13 @@
 ﻿using MediatR;
+using Turnos.Application.Common;
 
-public class DeleteSlotCommand : IRequest<Unit>
+public class DeleteSlotCommand : IRequest<Unit>, ITenantScoped
 {
     public Guid SlotId { get; }
-    public Guid OwnerId { get; }
-    public DeleteSlotCommand(Guid slotId, Guid ownerId)
+    public Guid RestauranteId { get; set; }
+    public DeleteSlotCommand(Guid slotId)
     {
         SlotId = slotId;
-        OwnerId = ownerId;
+        
     }
 }
