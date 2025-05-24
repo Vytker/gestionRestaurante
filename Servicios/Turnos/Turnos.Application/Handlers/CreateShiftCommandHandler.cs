@@ -35,7 +35,7 @@ namespace Turnos.Application.Handlers
                 throw new InvalidOperationException("El turno se solapa con otro existente.");
 
             // 3) Crear entidad
-            var turno = new Turno(request.EmployeeId, request.OwnerId, intervalo);
+            var turno = new Turno(request.EmployeeId, request.RestauranteId, intervalo);
             _context.Turnos.Add(turno);
             await _context.SaveChangesAsync(cancellationToken);
 

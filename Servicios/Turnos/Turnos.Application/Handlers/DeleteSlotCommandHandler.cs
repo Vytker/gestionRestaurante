@@ -11,8 +11,12 @@ public class DeleteSlotCommandHandler : IRequestHandler<DeleteSlotCommand, Unit>
     public async Task<Unit> Handle(DeleteSlotCommand req, CancellationToken ct)
     {
         var slot = await _ctx.Slots
-            .FirstOrDefaultAsync(s => s.Id == req.SlotId && !s.IsDeleted, ct)
-            ?? throw new KeyNotFoundException("Slot no encontrado");
+     .FirstOrDefaultAsync(s =>
+         s.Id == req.SlotId &&
+         s.RestauranteId == req.RestauranteId &&  // ← filtro tenant
+         !s.IsDeleted,
+         ct)
+     ?? throw new KeyNotFoundException("Slot no encontrado en este restaurante");
 
         // marcar soft-delete
         slot.IsDeleted = true;

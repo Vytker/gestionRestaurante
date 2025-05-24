@@ -10,8 +10,12 @@ public class UpdateSlotCommandHandler : IRequestHandler<UpdateSlotCommand, SlotD
     public async Task<SlotDto> Handle(UpdateSlotCommand req, CancellationToken ct)
     {
         var slot = await _ctx.Slots
-            .FirstOrDefaultAsync(s => s.Id == req.SlotId && !s.IsDeleted, ct)
-            ?? throw new KeyNotFoundException("Slot no encontrado");
+      .FirstOrDefaultAsync(s =>
+          s.Id == req.SlotId &&
+          s.RestauranteId == req.RestauranteId &&  // filtro tenant
+          !s.IsDeleted,
+          ct)
+      ?? throw new KeyNotFoundException("Slot no encontrado en este restaurante");
 
         // (Opcional) validar que OwnerId coincide con slot.OwnerId...
 
@@ -25,7 +29,7 @@ public class UpdateSlotCommandHandler : IRequestHandler<UpdateSlotCommand, SlotD
             Id = slot.Id,
             Name = slot.Name,
             Start = slot.Horario.Inicio,
-            End = slot.Horario.Inicio,
+            End = slot.Horario.Fin,
             IsDeleted = slot.IsDeleted
         };
     }

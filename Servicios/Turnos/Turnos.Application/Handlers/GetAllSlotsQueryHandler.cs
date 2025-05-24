@@ -15,7 +15,7 @@ public class GetAllSlotsQueryHandler : IRequestHandler<GetAllSlotsQuery, IEnumer
     public async Task<IEnumerable<SlotDto>> Handle(GetAllSlotsQuery req, CancellationToken ct)
         => await _context.Slots
             .AsNoTracking()
-            .Where(s => !s.IsDeleted)
+            .Where(s => !s.IsDeleted && s.RestauranteId == req.RestauranteId)
             .Select(s => new SlotDto
             {
                 Id = s.Id,

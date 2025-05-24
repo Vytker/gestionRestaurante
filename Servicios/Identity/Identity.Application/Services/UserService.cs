@@ -34,6 +34,10 @@ namespace Identity.Application.Services
             {
                 return false; // Usuario ya existe
             }
+            if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
+            {
+                return false; // Usuario ya existe
+            }
 
             // Encriptar la contraseña
             var hashedPassword = BCrypt.Net.BCrypt.HashPassword(dto.Password);

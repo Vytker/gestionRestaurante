@@ -26,7 +26,7 @@ namespace Turnos.Application.Handlers
             if (turno == null)
                 throw new InvalidOperationException("Turno no encontrado.");
 
-            if (turno.OwnerId != request.OwnerId)
+            if (turno.RestauranteId != request.RestauranteId)
                 throw new UnauthorizedAccessException("No puedes eliminar este turno.");
 
             _context.Turnos.Remove(turno);

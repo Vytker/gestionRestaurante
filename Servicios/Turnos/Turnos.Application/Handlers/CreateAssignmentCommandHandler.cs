@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Turnos.Domain.Entities;
 using Turnos.Infrastructure.Persistence;
 
@@ -10,8 +11,12 @@ public class CreateAssignmentCommandHandler : IRequestHandler<CreateAssignmentCo
     public async Task<AssignmentDto> Handle(CreateAssignmentCommand req, CancellationToken ct)
     {
         // 1) obtengo el slot para leer sus TimeSpans
-        var slot = await _context.Slots.FindAsync(new object[] { req.SlotId }, ct)
-                   ?? throw new InvalidOperationException("Slot no encontrado");
+        var slot = await _context.Slots
+              .SingleOrDefaultAsync(s =>
+                    s.Id == req.SlotId &&
+                    s.RestauranteId == req.RestauranteId, ct)
+              ?? throw new UnauthorizedAccessException(
+                       "Slot no pertenece a este restaurante");
 
         var fechaSolo = req.Date.Date;
         var tsInicio = slot.Horario.Inicio;
@@ -32,7 +37,7 @@ public class CreateAssignmentCommandHandler : IRequestHandler<CreateAssignmentCo
             fechaHoraInicio: dtInicio,
             fechaHoraFin: dtFin,
             empleadoId: req.EmpleadoId,
-            ownerId: req.OwnerId
+            restauranteId: req.RestauranteId
         );
 
         _context.Assignments.Add(asg);

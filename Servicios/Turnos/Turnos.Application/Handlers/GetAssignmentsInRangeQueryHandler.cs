@@ -15,7 +15,9 @@ public class GetAssignmentsInRangeQueryHandler
     {
         // Filtramos todo aquello cuyo inicio esté dentro del rango [start, end)
         return await _context.Assignments
-            .Where(a => a.FechaHoraInicio >= req.Start
+            .Where(a =>
+            a.RestauranteId == req.RestauranteId &&
+            a.FechaHoraInicio >= req.Start
                      && a.FechaHoraInicio < req.End)
             .Select(a => new AssignmentDto
             {

@@ -1,9 +1,11 @@
-﻿
-using System;
+﻿using System;
 using MediatR;
+using Turnos.Application.Common;
 using Turnos.Application.Dtos;
 
-namespace Turnos.Application.Queries
+public record GetSlotByIdQuery(Guid SlotId)
+    : IRequest<SlotDto?>, ITenantScoped
 {
-    public record GetSlotByIdQuery(Guid SlotId) : IRequest<SlotDto?>;
+    // Inyectado por TenantResolutionBehavior
+    public Guid RestauranteId { get; set; }
 }

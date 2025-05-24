@@ -12,7 +12,7 @@ public class DeleteAssignmentCommandHandler : IRequestHandler<DeleteAssignmentCo
     public async Task<Unit> Handle(DeleteAssignmentCommand req, CancellationToken ct)
     {
         var asg = await _context.Assignments
-            .FirstOrDefaultAsync(a => a.Id == req.Id, ct)
+            .FirstOrDefaultAsync(a => a.Id == req.Id && a.RestauranteId == req.RestauranteId , ct)
             ?? throw new InvalidOperationException("Assignment not found");
         _context.Assignments.Remove(asg);
         await _context.SaveChangesAsync(ct);

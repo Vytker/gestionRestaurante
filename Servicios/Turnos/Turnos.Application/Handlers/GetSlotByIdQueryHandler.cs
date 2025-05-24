@@ -22,7 +22,9 @@ namespace Turnos.Application.Handlers
             CancellationToken ct)
         {
             return await _ctx.Slots
-                .Where(s => s.Id == req.SlotId && !s.IsDeleted)
+                .Where(s =>
+                s.RestauranteId == req.RestauranteId &&
+                s.Id == req.SlotId && !s.IsDeleted)
                 .Select(s => new SlotDto
                 {
                     Id = s.Id,

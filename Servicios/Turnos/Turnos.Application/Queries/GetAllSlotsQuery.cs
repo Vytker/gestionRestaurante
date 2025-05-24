@@ -1,5 +1,9 @@
 ﻿using MediatR;
-using System.Collections.Generic;
+using Turnos.Application.Common;
 using Turnos.Application.Dtos;
 
-public class GetAllSlotsQuery : IRequest<IEnumerable<SlotDto>> { }
+public record GetAllSlotsQuery : IRequest<IEnumerable<SlotDto>>, ITenantScoped
+{
+    // El TenantResolutionBehavior rellenará esto
+    public Guid RestauranteId { get; set; }
+}
