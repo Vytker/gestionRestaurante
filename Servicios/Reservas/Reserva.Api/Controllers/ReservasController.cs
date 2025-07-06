@@ -72,7 +72,7 @@ namespace Reserva.Api.Controllers
         }
 
 
-        [Authorize]
+        [Authorize (Roles = "Owner,SuperAdmin")]
         [HttpPut("{id}/{estado}")]
         public async Task<IActionResult> ActualizarEstado(Guid id, string estado)
         {

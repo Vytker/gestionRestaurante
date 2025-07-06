@@ -13,6 +13,7 @@ namespace Identity.Infrastructure
         public DbSet<User> Users => Set<User>();
         public DbSet<Restaurante> Restaurantes => Set<Restaurante>();
 
+        public DbSet<Invitation> Invitations { get; set; }
         public DbSet<UserRestaurante> UserRestaurantes => Set<UserRestaurante>();
 
         protected override void OnModelCreating(ModelBuilder b)
@@ -35,6 +36,10 @@ namespace Identity.Infrastructure
             b.Entity<Restaurante>()
              .HasIndex(r => r.Slug)
              .IsUnique();
+
+            b.Entity<Invitation>()
+                .HasIndex(i => i.Token)
+                .IsUnique();
         }
     }
 }
