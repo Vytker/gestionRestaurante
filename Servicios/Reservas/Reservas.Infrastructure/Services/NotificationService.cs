@@ -29,7 +29,7 @@ public class NotificationService : INotificationService
         // --- 1) Obtener URL con fallback ---
         var cacheKey = $"RestaurantBaseUrl_{reserva.RestauranteId}";
         // Intentamos cachear solo si existe la URL
-        string maybeUrl = _cache.GetOrCreate(cacheKey, entry =>
+        string? maybeUrl = _cache.GetOrCreate(cacheKey, entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
             return _config.GetSection("RestaurantUrls")[reserva.RestauranteId.ToString()];
@@ -43,7 +43,7 @@ public class NotificationService : INotificationService
             maybeUrl = null;
         }
 
-        // --- 2) Obtener e-mail restaurante con fallback ---
+        
         var restEmail = _config
             .GetSection("RestaurantEmails")[reserva.RestauranteId.ToString()];
 
@@ -55,7 +55,7 @@ public class NotificationService : INotificationService
                 reserva.RestauranteId, restEmail);
         }
 
-        // --- 3) Construir cuerpo dinámico ---
+        
         string cuerpoPlano;
         if (maybeUrl is null)
         {
@@ -122,9 +122,9 @@ Puedes ver el estado de tu reserva en:
 
     public async Task NotifyReservationStateChangedAsync(Reserva reserva)
     {
-        // --- 1) Obtener URL con fallback ---
+       
         var cacheKey = $"RestaurantBaseUrl_{reserva.RestauranteId}";
-        string maybeUrl = _cache.GetOrCreate(cacheKey, entry =>
+        string? maybeUrl = _cache.GetOrCreate(cacheKey, entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
             return _config.GetSection("RestaurantUrls")[reserva.RestauranteId.ToString()];
@@ -138,45 +138,45 @@ Puedes ver el estado de tu reserva en:
             maybeUrl = null;
         }
 
-        // --- 2) Construir asunto y cuerpo según estado ---
-        (string subject, string body) = reserva.Estado switch
+       
+        (string? subject, string? body) = reserva.Estado switch
         {
             Reserva.EstadoReserva.Confirmada => (
                 "Tu reserva ha sido confirmada",
-$@"Hola {reserva.NombreCliente},
+            $@"Hola {reserva.NombreCliente},
 
-Tu reserva para {reserva.FechaReserva:dd/MM/yyyy HH:mm} ha sido *Confirmada*.
-Código de seguimiento: {reserva.Codigo}
-{(maybeUrl is null
-    ? string.Empty
-    : $"\nPuedes verlo en: {maybeUrl.TrimEnd('/')}/track?code={reserva.Codigo}\n")}"
-            ),
-            Reserva.EstadoReserva.Cancelada => (
-                "Tu reserva ha sido cancelada",
-$@"Hola {reserva.NombreCliente},
+            Tu reserva para {reserva.FechaReserva:dd/MM/yyyy HH:mm} ha sido *Confirmada*.
+            Código de seguimiento: {reserva.Codigo}
+            {(maybeUrl is null
+                ? string.Empty
+                : $"\nPuedes verlo en: {maybeUrl.TrimEnd('/')}/track?code={reserva.Codigo}\n")}"
+                        ),
+                        Reserva.EstadoReserva.Cancelada => (
+                            "Tu reserva ha sido cancelada",
+            $@"Hola {reserva.NombreCliente},
 
-Lamentamos informarte que tu reserva para {reserva.FechaReserva:dd/MM/yyyy HH:mm} ha sido *Cancelada*.
-Código de seguimiento: {reserva.Codigo}
-{(maybeUrl is null
-    ? string.Empty
-    : $"\nMás info en: {maybeUrl.TrimEnd('/')}/track?code={reserva.Codigo}\n")}"
-            ),
-            Reserva.EstadoReserva.Rechazada => (
-                "Tu reserva ha sido rechazada",
-$@"Hola {reserva.NombreCliente},
+            Lamentamos informarte que tu reserva para {reserva.FechaReserva:dd/MM/yyyy HH:mm} ha sido *Cancelada*.
+            Código de seguimiento: {reserva.Codigo}
+            {(maybeUrl is null
+                ? string.Empty
+                : $"\nMás info en: {maybeUrl.TrimEnd('/')}/track?code={reserva.Codigo}\n")}"
+                        ),
+                        Reserva.EstadoReserva.Rechazada => (
+                            "Tu reserva ha sido rechazada",
+            $@"Hola {reserva.NombreCliente},
 
-Lamentamos informarte que tu reserva para {reserva.FechaReserva:dd/MM/yyyy HH:mm} ha sido *Rechazada*.
-Código de seguimiento: {reserva.Codigo}
-{(maybeUrl is null
-    ? string.Empty
-    : $"\nMás info en: {maybeUrl.TrimEnd('/')}/track?code={reserva.Codigo}\n")}"
+            Lamentamos informarte que tu reserva para {reserva.FechaReserva:dd/MM/yyyy HH:mm} ha sido *Rechazada*.
+            Código de seguimiento: {reserva.Codigo}
+            {(maybeUrl is null
+                ? string.Empty
+                : $"\nMás info en: {maybeUrl.TrimEnd('/')}/track?code={reserva.Codigo}\n")}"
             ),
             _ => (null, null)
         };
 
         if (subject is null) return;
 
-        // --- 3) Obtener e-mail restaurante con fallback ---
+       
         var restEmail = _config
             .GetSection("RestaurantEmails")[reserva.RestauranteId.ToString()];
         if (string.IsNullOrWhiteSpace(restEmail))
@@ -187,7 +187,7 @@ Código de seguimiento: {reserva.Codigo}
                 reserva.RestauranteId, restEmail);
         }
 
-        // --- 4) Crear y enviar mensaje ---
+      
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress("Restaurant", _config["Email:From"]));
         message.To.Add(new MailboxAddress(reserva.NombreCliente, reserva.Email));

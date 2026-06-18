@@ -105,6 +105,37 @@ namespace Identity.Application.Services
                 .ToListAsync();
         }
 
+        public async Task EliminarStaffAsync(Guid restauranteId, Guid staffId)
+        {
+            // Buscamos la asociación usuario-restaurante con rol “Staff”
+            var staffAssociation = await _context.UserRestaurantes
+                .FirstOrDefaultAsync(ur =>
+                    ur.RestaurantId == restauranteId &&
+                    ur.UserId == staffId &&
+                    ur.Role == "Staff"
+                );
+
+            if (staffAssociation == null)
+            {
+                // Lanzamos una excepción específica para not found
+                throw new KeyNotFoundException("El staff no fue encontrado para este restaurante.");
+            }
+
+            _context.UserRestaurantes.Remove(staffAssociation);
+            var user = await _context.Users.FindAsync(staffId);
+            if (user != null)
+            {
+                _context.Users.Remove(user);
+            }
+            else
+            {
+                // Si por alguna razón no existe el User (muy raro, porque
+                // acabamos de encontrar la asociación), podríamos ignorar o lanzar:
+                throw new KeyNotFoundException("El usuario asociado no se encontró en la tabla Users.");
+            }
+
+            await _context.SaveChangesAsync();
+        }
 
     }
 }

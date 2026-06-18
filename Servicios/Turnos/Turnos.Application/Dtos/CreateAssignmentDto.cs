@@ -1,5 +1,4 @@
-﻿// Dtos/CreateAssignmentDto.cs
-public class CreateAssignmentDto
+﻿public class CreateAssignmentDto
 {
     public Guid SlotId { get; set; }
     public DateTime Date { get; set; }

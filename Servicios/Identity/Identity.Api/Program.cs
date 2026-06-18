@@ -2,6 +2,7 @@
 using Identity.Application.Interfaces;
 using Identity.Application.Services;
 using Identity.Infrastructure;
+using Identity.Infrastructure.Seed;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -13,6 +14,8 @@ using System.Security.Claims;
 using System.Text;
 using HealthChecks.NpgSql;
 using Microsoft.OpenApi.Models;
+using Amazon.ElasticMapReduce.Model;
+using Identity.Application.Common;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<IdentityDbContext>(options =>
@@ -22,7 +25,13 @@ builder.Services.AddDbContext<IdentityDbContext>(options =>
 builder.Services.AddScoped<IUserService, UserService>();
 // Configurar la autenticaci�n con JWT
 builder.Services.AddScoped<IRestauranteService, RestauranteService>();
-
+builder.Services.Configure<BrevoSettings>(builder.Configuration.GetSection("Brevo"));
+builder.Services.AddHttpClient("Brevo", client =>
+{
+    client.BaseAddress = new Uri("https://api.brevo.com/v3/");
+    client.DefaultRequestHeaders.Add("api-key", builder.Configuration["Brevo:ApiKey"]!);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+});
 //temporal quitar
 var jwtKey = builder.Configuration["Jwt:Key"]!;
 
@@ -157,6 +166,7 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
     db.Database.Migrate();
+    await IdentitySeeder.SeedAsync(db, app.Configuration);
 }
 
 app.Run();

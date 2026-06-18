@@ -76,7 +76,7 @@ public class RestaurantesController : ControllerBase
     }
 
     // RestaurantesController.cs
-    [Authorize(Roles = "Owner,SuperAdmin")]
+    [Authorize(Roles = "Owner,SuperAdmin,Staff")]
     [HttpGet("{id:guid}/staff/list")]
     public async Task<IActionResult> ListarStaff(Guid id)
     {
@@ -91,5 +91,38 @@ public class RestaurantesController : ControllerBase
         var staff = await _svc.ListarStaffAsync(id);
         return Ok(staff);
     }
+    [Authorize(Roles = "Owner,SuperAdmin")]
+    [HttpDelete("{restaurantId:guid}/staff/{staffId:guid}")]
+    public async Task<IActionResult> RemoveStaff(Guid restaurantId, Guid staffId)
+    {
+        // Solo SuperAdmin puede eliminar en cualquier restaurante.
+        // Un Owner solo puede eliminar staff de SU PROPIO restaurante:
+        if (!User.IsInRole("SuperAdmin"))
+        {
+            // Se asume que, al loguearse, el Owner tiene en sus Claims un claim "restauranteId" con el GUID de su restaurante.
+            var claimValue = User.FindFirst("restauranteId")?.Value;
+            if (!Guid.TryParse(claimValue, out var claimRestId) || claimRestId != restaurantId)
+            {
+                return Forbid();
+            }
+        }
 
+        try
+        {
+            await _svc.EliminarStaffAsync(restaurantId, staffId);
+            // 204 No Content es más apropiado para DELETE exitosos sin payload.
+            return Ok(new {success = true, message = "Staff eliminado correctamente."});
+        }
+        catch (KeyNotFoundException knfEx)
+        {
+            // Si la asociación no existe, devolvemos 404
+            return NotFound(new { message = knfEx.Message });
+        }
+        catch (Exception ex)
+        {
+            // Para cualquier otro error imprevisto, devolvemos 500
+            // (Podrías registrar el error en logs aquí)
+            return StatusCode(500, new { message = "Error al eliminar el staff." });
+        }
+    }
 }

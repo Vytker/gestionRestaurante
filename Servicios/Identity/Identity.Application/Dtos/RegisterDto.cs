@@ -2,11 +2,20 @@
 {
     public class RegisterDto
     {
-        public string UserName { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-        public string Role { get; set; } = "User"; // Opcional, si siempre será "User" puedes omitirlo
+        // Para invitación (Owner/SuperAdmin)
+        public string? Email { get; set; }
+        public string? Role { get; set; } = "User";
+
+        // → Datos comunes
+        public string? UserName { get; set; }
+        public string? Password { get; set; }
+        public string? PasswordConfirm { get; set; }
+
+        // Para completado (primer login)
+        public string? InviteToken { get; set; }
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+
+        public Guid? RestaurantId { get; set; }
     }
 }

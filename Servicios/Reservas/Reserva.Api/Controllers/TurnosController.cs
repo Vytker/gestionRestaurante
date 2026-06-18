@@ -75,7 +75,6 @@ namespace Reserva.Api.Controllers
             }
             catch (Exception ex)
             {
-                // Devuelve el mensaje del error para ver qué está fallando
                 return StatusCode(500, new { error = "Error interno del servidor: " + ex.Message });
             }
         }

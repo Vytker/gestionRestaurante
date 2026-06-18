@@ -11,5 +11,8 @@ namespace Identity.Application.Interfaces
         Task<RestaurantSummaryDto?> ObtenerAsync(Guid id); // devuelve un restaurante por id
         Task AsignarUsuarioAsync(Guid restauranteId, AddStaffDto dto); // asigna un usuario a un restaurante owner -> staff
         Task<IEnumerable<StaffDto>> ListarStaffAsync(Guid restauranteId);
+        //eliminar staffasync
+        Task EliminarStaffAsync(Guid restauranteId, Guid staffId);
+        
     }
 }

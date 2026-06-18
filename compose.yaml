@@ -8,89 +8,116 @@ services:
     restart: unless-stopped
     init: true
     depends_on:
-      - reserva_db
+      reserva_db:
+        condition: service_healthy
     networks:
       - reservanet
+
   reserva_db:
     image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: unless-stopped
     ports:
       - "1433:1433"
     environment:
-      SA_PASSWORD: "CHANGE_ME"
+      SA_PASSWORD: "${RESERVA_SA_PASSWORD}"
       ACCEPT_EULA: "Y"
     volumes:
-      - reserva_db_data:/var/opt/mssql  # Volumen persistente para la base de datos
+      - reserva_db_data:/var/opt/mssql
     networks:
       - reservanet
-  
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${RESERVA_SA_PASSWORD}", "-Q", "SELECT 1", "-No"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   identity-db:
     image: postgres:15
     container_name: identity-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: identitydb
+      POSTGRES_USER: ${IDENTITY_DB_USER}
+      POSTGRES_PASSWORD: ${IDENTITY_DB_PASSWORD}
+      POSTGRES_DB: ${IDENTITY_DB_NAME}
     volumes:
       - identity_db_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
     networks:
       - reservanet
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${IDENTITY_DB_USER} -d ${IDENTITY_DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   identity-api:
     build:
       context: .
-      dockerfile: Servicios/Identity/Identity.Api/Dockerfile  
+      dockerfile: Servicios/Identity/Identity.Api/Dockerfile
     container_name: identity-api
-    command: ["dotnet", "Identity.Api.dll", "migrate"]
+    restart: unless-stopped
     depends_on:
-      - identity-db
+      identity-db:
+        condition: service_healthy
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=identity-db;Port=5432;Database=identitydb;Username=postgres;Password=postgres
-      - Jwt__Key=CHANGE_ME
+      - ConnectionStrings__DefaultConnection=Host=identity-db;Port=5432;Database=${IDENTITY_DB_NAME};Username=${IDENTITY_DB_USER};Password=${IDENTITY_DB_PASSWORD}
+      - Jwt__Key=${JWT_KEY}
+      - SeedAdmin__UserName=${SEED_ADMIN_USERNAME}
+      - SeedAdmin__Email=${SEED_ADMIN_EMAIL}
+      - SeedAdmin__Password=${SEED_ADMIN_PASSWORD}
     ports:
       - "5001:5000"
     networks:
       - reservanet
-    
 
   kong-database:
     image: postgres:13
     restart: unless-stopped
     environment:
       POSTGRES_DB: kong
-      POSTGRES_USER: kong
-      POSTGRES_PASSWORD: kong
+      POSTGRES_USER: ${KONG_DB_USER}
+      POSTGRES_PASSWORD: ${KONG_DB_PASSWORD}
     volumes:
       - kong_data:/var/lib/postgresql/data
     networks:
       - reservanet
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${KONG_DB_USER} -d kong"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   kong:
     image: kong:latest
+    restart: unless-stopped
     depends_on:
-      - kong-database
+      kong-database:
+        condition: service_healthy
     networks:
       - reservanet
     environment:
       KONG_DATABASE: postgres
       KONG_PG_HOST: kong-database
-      KONG_PG_USER: kong
-      KONG_PG_PASSWORD: kong
+      KONG_PG_USER: ${KONG_DB_USER}
+      KONG_PG_PASSWORD: ${KONG_DB_PASSWORD}
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_ADMIN_LISTEN: "0.0.0.0:8001"
     ports:
-      - "8000:8000" # Public access
-      - "8001:8001" # Admin API
-      - "8443:8443" # HTTPS public access
-      
+      - "8000:8000"
+      - "8001:8001"
+      - "8443:8443"
+
   konga:
     image: pantsel/konga
+    restart: unless-stopped
     ports:
       - "1337:1337"
     networks:
@@ -99,54 +126,72 @@ services:
       DB_ADAPTER: postgres
       DB_HOST: konga_db
       DB_PORT: 5432
-      DB_USER: kongauser
-      DB_PASSWORD: CHANGE_ME
+      DB_USER: ${KONGA_DB_USER}
+      DB_PASSWORD: ${KONGA_DB_PASSWORD}
       DB_DATABASE: kongadb
     depends_on:
-      - konga_db
+      konga_db:
+        condition: service_healthy
 
-  # Base de datos para Konga
   konga_db:
     image: postgres:10
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: kongauser
-      POSTGRES_PASSWORD: CHANGE_ME
+      POSTGRES_USER: ${KONGA_DB_USER}
+      POSTGRES_PASSWORD: ${KONGA_DB_PASSWORD}
       POSTGRES_DB: kongadb
     volumes:
-      - konga_data:/var/lib/postgresql/data  
+      - konga_data:/var/lib/postgresql/data
     networks:
       - reservanet
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${KONGA_DB_USER} -d kongadb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
   mailhog:
     image: mailhog/mailhog
+    restart: unless-stopped
     ports:
-       - "1025:1025"  # SMTP
-       - "8025:8025"  # UI web
+      - "1025:1025"
+      - "8025:8025"
     networks:
       - reservanet
+
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
+    restart: unless-stopped
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
       - "9090:9090"
+    networks:
+      - reservanet
+
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
+    restart: unless-stopped
     depends_on:
       - prometheus
     ports:
       - "3000:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_ADMIN_PASSWORD}
     volumes:
       - grafana_data:/var/lib/grafana
+    networks:
+      - reservanet
+
   turnos_db:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: turnos-db
     restart: unless-stopped
     environment:
-      SA_PASSWORD: "CHANGE_ME"
+      SA_PASSWORD: "${TURNOS_SA_PASSWORD}"
       ACCEPT_EULA: "Y"
     ports:
       - "1434:1433"
@@ -154,31 +199,40 @@ services:
       - turnos_db_data:/var/opt/mssql
     networks:
       - reservanet
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "${TURNOS_SA_PASSWORD}", "-Q", "SELECT 1", "-No"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   turnos_api:
     build:
       context: .
       dockerfile: Servicios/Turnos/Turnos.Api/Dockerfile
     container_name: turnos-api
+    restart: unless-stopped
+    init: true
     depends_on:
-      - turnos_db
+      turnos_db:
+        condition: service_healthy
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - Jwt__Key=CHANGE_ME
-      - ConnectionStrings__DefaultConnection=Server=turnos-db,1433;Database=TurnosDb;User=sa;Password=CHANGE_ME;Encrypt=True;TrustServerCertificate=True;
+      - Jwt__Key=${JWT_KEY}
+      - ConnectionStrings__DefaultConnection=Server=turnos-db,1433;Database=TurnosDb;User=sa;Password=${TURNOS_SA_PASSWORD};Encrypt=True;TrustServerCertificate=True;
     ports:
-      - "7070:8080" 
-    restart: unless-stopped
+      - "7070:8080"
     networks:
       - reservanet
-  
+
 volumes:
   reserva_db_data:
   kong_data:
   konga_data:
   identity_db_data:
-  grafana_data:  
-  turnos_db_data:  
+  grafana_data:
+  turnos_db_data:
+
 networks:
   reservanet:
     driver: bridge

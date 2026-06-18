@@ -32,12 +32,32 @@ namespace Identity.Api.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {
-           var success = await _userService.RegisterAsync(dto);
-            if (!success)
+            // 1) ¿Viene con token? → flujo de "completar perfil"
+            if (!string.IsNullOrWhiteSpace(dto.InviteToken))
             {
-                return BadRequest("El usuario ya existe");
+                var completeResult = await _userService.CompleteInvitationAsync(dto);
+                if (!completeResult.Success)
+                    return BadRequest(new { errors = completeResult.Errors });
+
+                return Ok("Perfil completado. Ya puedes iniciar sesión.");
             }
-            return Ok("Usuario registrado con éxito");
+
+            // 2) Si no trae token: sólo Owner o SuperAdmin pueden invitar
+            if (!User.Identity.IsAuthenticated ||
+                !(User.IsInRole("Owner") || User.IsInRole("SuperAdmin")))
+            {
+                return Forbid();
+            }
+
+            // Extrae el userId del claim "sub"
+            if (!User.TryGetUserId(out var creatorId))
+                return Unauthorized();
+
+            var inviteResult = await _userService.InviteAsync(dto, creatorId);
+            if (!inviteResult.Success)
+                return BadRequest(new { errors = inviteResult.Errors });
+
+            return Ok("Invitación enviada. El usuario recibirá un email para completar su perfil.");
         }
         // GET /api/auth/me
         [HttpGet("me")]
