@@ -43,17 +43,17 @@ builder.Services.AddControllers()
             .OrderBy()
             .Expand()
             .Count()
-            .SetMaxTop(100); // máximo 100 elementos por página
+            .SetMaxTop(100); // mï¿½ximo 100 elementos por pï¿½gina
         
         opt.EnableQueryFeatures();
         
     });
 Console.WriteLine("Modelo EDM generado correctamente.");
-// Desarrollo: caché en memoria
+// Desarrollo: cachï¿½ en memoria
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddTransient<INotificationService, NotificationService>();
-// 1) Health checks básicos
+// 1) Health checks bï¿½sicos
 builder.Services.AddHealthChecks()
     .AddSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -68,7 +68,7 @@ builder.Services.AddHealthChecksUI()
 
 
 
-// Configurar la autenticación con JWT
+// Configurar la autenticaciï¿½n con JWT
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -77,7 +77,7 @@ builder.Services.AddAuthentication(options =>
 .AddJwtBearer(options =>
 {
     
-    // Configura los parámetros de validación (usa valores de configuración o hardcodea para pruebas)
+    // Configura los parï¿½metros de validaciï¿½n (usa valores de configuraciï¿½n o hardcodea para pruebas)
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = false,
@@ -115,17 +115,8 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ReservasDbContext>();
-
-    try
-    {
-        db.Database.OpenConnection();
-        Console.WriteLine("Conexión exitosa a la base de datos.");
-        db.Database.CloseConnection();
-    }
-    catch (SqlException ex)
-    {
-        Console.WriteLine($"Error al conectar a la base de datos: {ex.Message}");
-    }
+    db.Database.Migrate();
+    Console.WriteLine("Migraciones aplicadas correctamente.");
 }
 
 // Configure the HTTP request pipeline.
@@ -154,7 +145,7 @@ app.MapHealthChecksUI(options => {
 
 
 
-// Exponer métricas de HTTP (request count, latencias, etc.)
+// Exponer mï¿½tricas de HTTP (request count, latencias, etc.)
 app.UseHttpMetrics();
 
 // Mapea el endpoint /metrics

@@ -12,7 +12,7 @@ using Turnos.Application.Behaviors;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Leer cadena de conexión
+// 1. Leer cadena de conexiï¿½n
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 // 2. Registrar DbContext
@@ -24,7 +24,7 @@ builder.Services.AddHttpContextAccessor();
 // 4. Registrar MediatR (busca handlers en el assembly de Application)
 
 var myAllowedOrigins = new[] { "http://127.0.0.1:8002" }; // front en Laravel
-// 1) Definir la política CORS
+// 1) Definir la polï¿½tica CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAdminPortal", policy =>
@@ -55,12 +55,12 @@ builder.Services.AddMediatR(cfg =>
     cfg.AddOpenBehavior(typeof(TenantResolutionBehavior<,>));
 });
 
-// 3. Registrar repositorio (inversión de control)
+// 3. Registrar repositorio (inversiï¿½n de control)
 builder.Services.AddScoped<ITurnoRepository, TurnoRepository>();
 
 builder.Services.AddAuthentication(options =>
 {
-    // Este es el esquema “por defecto” que ASP usa para [Authorize]
+    // Este es el esquema ï¿½por defectoï¿½ que ASP usa para [Authorize]
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
@@ -90,7 +90,7 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "Turnos API",
         Version = "v1",
-        Description = "Microservicio de gestión de turnos"
+        Description = "Microservicio de gestiï¿½n de turnos"
     });
 });
 
@@ -109,9 +109,16 @@ if (app.Environment.IsDevelopment())
 
 // 7. Middleware comunes
 app.UseHttpsRedirection();
-app.UseAuthentication();  // si usas autenticación
+app.UseAuthentication();  // si usas autenticaciï¿½n
 app.UseAuthorization();
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<TurnosDbContext>();
+    db.Database.Migrate();
+    Console.WriteLine("Migraciones aplicadas correctamente.");
+}
 
 app.Run();

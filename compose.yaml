@@ -10,6 +10,16 @@ services:
     depends_on:
       reserva_db:
         condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=gestionrestaurante-reserva_db-1,1433;Database=reservadb;User Id=sa;Password=${RESERVA_SA_PASSWORD};TrustServerCertificate=True
+      - Jwt__Key=${JWT_KEY}
+      - Email__From=${EMAIL_FROM}
+      - Email__SmtpHost=smtp-relay.brevo.com
+      - Email__SmtpPort=587
+      - Email__Username=${SMTP_USERNAME}
+      - Email__Password=${SMTP_PASSWORD}
+      - Email__FallbackNotificationEmail=${EMAIL_FALLBACK}
     networks:
       - reservanet
 
@@ -74,37 +84,16 @@ services:
     networks:
       - reservanet
 
-  kong-database:
-    image: postgres:13
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: kong
-      POSTGRES_USER: ${KONG_DB_USER}
-      POSTGRES_PASSWORD: ${KONG_DB_PASSWORD}
-    volumes:
-      - kong_data:/var/lib/postgresql/data
-    networks:
-      - reservanet
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${KONG_DB_USER} -d kong"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-
   kong:
     image: kong:latest
     restart: unless-stopped
-    depends_on:
-      kong-database:
-        condition: service_healthy
     networks:
       - reservanet
+    volumes:
+      - ./kong.yml:/usr/local/kong/declarative/kong.yml:ro
     environment:
-      KONG_DATABASE: postgres
-      KONG_PG_HOST: kong-database
-      KONG_PG_USER: ${KONG_DB_USER}
-      KONG_PG_PASSWORD: ${KONG_DB_PASSWORD}
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
       KONG_PROXY_ERROR_LOG: /dev/stderr
@@ -227,7 +216,6 @@ services:
 
 volumes:
   reserva_db_data:
-  kong_data:
   konga_data:
   identity_db_data:
   grafana_data:

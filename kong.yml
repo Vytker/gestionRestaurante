@@ -2,15 +2,36 @@ _format_version: "3.0"
 _transform: true
 
 services:
-  - name: reserva-api
+  - name: identity-api
+    url: http://identity-api:5000
+    routes:
+      - name: identity-auth
+        paths:
+          - /api/Auth
+          - /api/auth
+        strip_path: false
+      - name: identity-restaurantes
+        paths:
+          - /api/restaurantes
+        strip_path: false
+
+  - name: reservas-api
     url: http://reserva_api:8080
     routes:
-      - name: reserva-api-route
+      - name: reservas-route
         paths:
-          - /reservas
-        strip_path: true
-        methods:
-          - GET
-          - POST
-          - PUT
-          - DELETE
+          - /api/reservas
+          - /api/Turnos
+          - /api/turnos
+          - /api/odata
+        strip_path: false
+
+  - name: turnos-api
+    url: http://turnos-api:8080
+    routes:
+      - name: turnos-route
+        paths:
+          - /api/v1/gestion-horarios
+          - /api/v1/slots
+          - /api/v1/assignments
+        strip_path: false
